@@ -3,28 +3,87 @@ import { column, Schema, Table } from '@powersync/web';
 
 // ============ Table Definitions ============
 
+// PHARMACIES TABLE (NEW)
+const pharmacies = new Table(
+  {
+    name: column.text,
+    license_number: column.text,
+    address: column.text,
+    city: column.text,
+    state: column.text,
+    pincode: column.text,
+    phone: column.text,
+    email: column.text,
+    gst_number: column.text,
+    owner_id: column.text,
+    subscription_plan: column.text,
+    subscription_expires_at: column.text,
+    is_active: column.integer,
+    logo_url: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  },
+  {
+    indexes: {
+      owner_idx: ['owner_id'],
+      active_idx: ['is_active'],
+    },
+  }
+);
+
+// PHARMACY MEMBERS TABLE (NEW)
+const pharmacy_members = new Table(
+  {
+    pharmacy_id: column.text,
+    user_id: column.text,
+    role: column.text,
+    is_active: column.integer,
+    invited_by: column.text,
+    joined_at: column.text,
+  },
+  {
+    indexes: {
+      pharmacy_idx: ['pharmacy_id'],
+      user_idx: ['user_id'],
+      active_idx: ['is_active'],
+    },
+  }
+);
+
+// PROFILES TABLE (UPDATED)
 const profiles = new Table({
   full_name: column.text,
-  email: column.text, // Changed from phone to email
-  role: column.text,
-  avatar_url: column.text, // For Google profile picture
-  created_at: column.text,
-  updated_at: column.text,
-});
-
-const suppliers = new Table({
-  name: column.text,
-  contact_person: column.text,
-  phone: column.text,
   email: column.text,
-  address: column.text,
-  gst_number: column.text,
+  avatar_url: column.text,
+  default_pharmacy_id: column.text, // NEW: Default/last selected pharmacy
   created_at: column.text,
   updated_at: column.text,
 });
 
+// SUPPLIERS TABLE (UPDATED - added pharmacy_id)
+const suppliers = new Table(
+  {
+    pharmacy_id: column.text, // NEW: Multi-tenancy field
+    name: column.text,
+    contact_person: column.text,
+    phone: column.text,
+    email: column.text,
+    address: column.text,
+    gst_number: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  },
+  {
+    indexes: {
+      pharmacy_idx: ['pharmacy_id'], // NEW
+    },
+  }
+);
+
+// MEDICINES TABLE (UPDATED - added pharmacy_id)
 const medicines = new Table(
   {
+    pharmacy_id: column.text, // NEW: Multi-tenancy field
     name: column.text,
     generic_name: column.text,
     manufacturer: column.text,
@@ -39,14 +98,17 @@ const medicines = new Table(
   },
   {
     indexes: {
-      barcode_idx: ['barcode'],
-      name_idx: ['name'],
+      pharmacy_idx: ['pharmacy_id'], // NEW
+      barcode_idx: ['pharmacy_id', 'barcode'], // UPDATED: Composite index
+      name_idx: ['pharmacy_id', 'name'], // UPDATED: Composite index
     },
   }
 );
 
+// MEDICINE BATCHES TABLE (UPDATED - added pharmacy_id)
 const medicine_batches = new Table(
   {
+    pharmacy_id: column.text, // NEW: Multi-tenancy field
     medicine_id: column.text,
     supplier_id: column.text,
     batch_number: column.text,
@@ -63,15 +125,18 @@ const medicine_batches = new Table(
   },
   {
     indexes: {
-      medicine_idx: ['medicine_id'],
-      expiry_idx: ['expiry_date'],
-      batch_number_idx: ['batch_number'],
+      pharmacy_idx: ['pharmacy_id'], // NEW
+      medicine_idx: ['pharmacy_id', 'medicine_id'], // UPDATED: Composite
+      expiry_idx: ['pharmacy_id', 'expiry_date'], // UPDATED: Composite
+      batch_number_idx: ['pharmacy_id', 'batch_number'], // UPDATED: Composite
     },
   }
 );
 
+// CUSTOMERS TABLE (UPDATED - added pharmacy_id)
 const customers = new Table(
   {
+    pharmacy_id: column.text, // NEW: Multi-tenancy field
     name: column.text,
     phone: column.text,
     email: column.text,
@@ -82,14 +147,17 @@ const customers = new Table(
   },
   {
     indexes: {
-      phone_idx: ['phone'],
-      email_idx: ['email'],
+      pharmacy_idx: ['pharmacy_id'], // NEW
+      phone_idx: ['pharmacy_id', 'phone'], // UPDATED: Composite
+      email_idx: ['pharmacy_id', 'email'], // UPDATED: Composite
     },
   }
 );
 
+// SALES TABLE (UPDATED - added pharmacy_id)
 const sales = new Table(
   {
+    pharmacy_id: column.text, // NEW: Multi-tenancy field
     invoice_number: column.text,
     customer_id: column.text,
     user_id: column.text,
@@ -104,14 +172,16 @@ const sales = new Table(
   },
   {
     indexes: {
-      user_idx: ['user_id'],
-      customer_idx: ['customer_id'],
-      created_idx: ['created_at'],
-      invoice_idx: ['invoice_number'],
+      pharmacy_idx: ['pharmacy_id'], // NEW
+      user_idx: ['pharmacy_id', 'user_id'], // UPDATED: Composite
+      customer_idx: ['pharmacy_id', 'customer_id'], // UPDATED: Composite
+      created_idx: ['pharmacy_id', 'created_at'], // UPDATED: Composite
+      invoice_idx: ['pharmacy_id', 'invoice_number'], // UPDATED: Composite
     },
   }
 );
 
+// SALE ITEMS TABLE (unchanged - inherits pharmacy from sales)
 const sale_items = new Table(
   {
     sale_id: column.text,
@@ -133,8 +203,10 @@ const sale_items = new Table(
   }
 );
 
+// EXPIRY ALERTS TABLE (UPDATED - added pharmacy_id)
 const expiry_alerts = new Table(
   {
+    pharmacy_id: column.text, // NEW: Multi-tenancy field
     medicine_batch_id: column.text,
     alert_type: column.text,
     is_acknowledged: column.integer,
@@ -144,14 +216,17 @@ const expiry_alerts = new Table(
   },
   {
     indexes: {
-      batch_idx: ['medicine_batch_id'],
-      acknowledged_idx: ['is_acknowledged'],
+      pharmacy_idx: ['pharmacy_id'], // NEW
+      batch_idx: ['pharmacy_id', 'medicine_batch_id'], // UPDATED: Composite
+      acknowledged_idx: ['pharmacy_id', 'is_acknowledged'], // UPDATED: Composite
     },
   }
 );
 
+// STOCK ALERTS TABLE (UPDATED - added pharmacy_id)
 const stock_alerts = new Table(
   {
+    pharmacy_id: column.text, // NEW: Multi-tenancy field
     medicine_id: column.text,
     current_stock: column.integer,
     reorder_level: column.integer,
@@ -160,14 +235,17 @@ const stock_alerts = new Table(
   },
   {
     indexes: {
-      medicine_idx: ['medicine_id'],
-      resolved_idx: ['is_resolved'],
+      pharmacy_idx: ['pharmacy_id'], // NEW
+      medicine_idx: ['pharmacy_id', 'medicine_id'], // UPDATED: Composite
+      resolved_idx: ['pharmacy_id', 'is_resolved'], // UPDATED: Composite
     },
   }
 );
 
 // ============ Export Schema ============
 export const AppSchema = new Schema({
+  pharmacies, // NEW
+  pharmacy_members, // NEW
   profiles,
   suppliers,
   medicines,
@@ -179,134 +257,6 @@ export const AppSchema = new Schema({
   stock_alerts,
 });
 
-// ============ TypeScript Types (Kysely) ============
-
-export interface ProfileTable {
-  id: string;
-  full_name: string;
-  email: string; // Changed from phone to email
-  role: 'admin' | 'pharmacist' | 'cashier';
-  avatar_url: string | null; // For Google profile picture
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SupplierTable {
-  id: string;
-  name: string;
-  contact_person: string | null;
-  phone: string;
-  email: string | null;
-  address: string | null;
-  gst_number: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MedicineTable {
-  id: string;
-  name: string;
-  generic_name: string | null;
-  manufacturer: string | null;
-  category: string | null;
-  barcode: string | null;
-  unit_type: 'strip' | 'bottle' | 'tube' | 'piece' | null;
-  reorder_level: number;
-  storage_condition: string | null;
-  requires_prescription: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MedicineBatchTable {
-  id: string;
-  medicine_id: string;
-  supplier_id: string | null;
-  batch_number: string;
-  manufacture_date: string | null;
-  expiry_date: string;
-  mrp: number;
-  purchase_price: number;
-  selling_price: number;
-  quantity: number;
-  available_quantity: number;
-  gst_percentage: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CustomerTable {
-  id: string;
-  name: string;
-  phone: string;
-  email: string | null;
-  address: string | null;
-  date_of_birth: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SaleTable {
-  id: string;
-  invoice_number: string;
-  customer_id: string | null;
-  user_id: string;
-  total_amount: number;
-  discount_amount: number;
-  tax_amount: number;
-  net_amount: number;
-  payment_method: 'cash' | 'card' | 'upi' | 'wallet' | null;
-  payment_status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SaleItemTable {
-  id: string;
-  sale_id: string;
-  medicine_batch_id: string | null;
-  medicine_name: string;
-  batch_number: string | null;
-  quantity: number;
-  unit_price: number;
-  discount: number;
-  gst_percentage: number | null;
-  gst_amount: number | null;
-  total_price: number;
-  created_at: string;
-}
-
-export interface ExpiryAlertTable {
-  id: string;
-  medicine_batch_id: string;
-  alert_type: '15_days' | '30_days' | '90_days' | 'expired';
-  is_acknowledged: number;
-  acknowledged_by: string | null;
-  acknowledged_at: string | null;
-  created_at: string;
-}
-
-export interface StockAlertTable {
-  id: string;
-  medicine_id: string;
-  current_stock: number;
-  reorder_level: number;
-  is_resolved: number;
-  created_at: string;
-}
-
-// Kysely Database Interface
-export interface PharmacyDatabase {
-  profiles: ProfileTable;
-  suppliers: SupplierTable;
-  medicines: MedicineTable;
-  medicine_batches: MedicineBatchTable;
-  customers: CustomerTable;
-  sales: SaleTable;
-  sale_items: SaleItemTable;
-  expiry_alerts: ExpiryAlertTable;
-  stock_alerts: StockAlertTable;
-}
 
 // Export types
 export type Database = (typeof AppSchema)['types'];

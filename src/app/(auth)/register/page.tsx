@@ -1,265 +1,406 @@
 // app/(auth)/register/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useKyselyDB, usePowerSync } from '@/lib/powersync/PowersyncProvider';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import useAuth from "@/hooks/use-auth";
+import {
+  Building2,
+  Mail,
+  Shield,
+  User,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+  Lock,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+type Step = "pharmacy" | "details";
 
 export default function RegisterPage() {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'pharmacist' | 'cashier'>('cashier');
-  const [error, setError] = useState('');
+  const [step, setStep] = useState<Step>("pharmacy");
+  const [pharmacyInfo, setPharmacyInfo] = useState<any>(null);
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { supabaseConnector } = usePowerSync();
-  const db = useKyselyDB();
 
-  // Email/Password Registration
-  const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  const { verifyPharmacyId, signUpWithPharmacy } = useAuth();
 
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  // ============ Step 1: Pharmacy ID Validation ============
+  const pharmacyFormik = useFormik({
+    initialValues: {
+      pharmacyId: "",
+    },
+    validationSchema: Yup.object({
+      pharmacyId: Yup.string()
+        .required("Pharmacy ID is required")
+        .min(3, "Invalid Pharmacy ID"),
+    }),
+    onSubmit: async (values) => {
+      setError("");
+      setIsLoading(true);
 
-    // Validate password length
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+      try {
+        const pharmacy = await verifyPharmacyId(values.pharmacyId);
 
-    setIsLoading(true);
+        if (!pharmacy) {
+          setError("Invalid Pharmacy ID. Please check and try again.");
+          return;
+        }
 
-    try {
-      // Sign up with Supabase
-      const { user } = await supabaseConnector.signUpWithEmail(email, password, fullName);
-
-      if (user) {
-        // Create profile in local database
-        await db
-          .insertInto('profiles')
-          .values({
-            id: user.id,
-            full_name: fullName,
-            email: email,
-            role: role,
-            avatar_url: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .execute();
-
-        console.log('✅ Registration successful!');
-        alert('Account created! Please check your email to verify your account.');
-        router.push('/login');
+        setPharmacyInfo(pharmacy);
+        setStep("details");
+        console.log("✅ Pharmacy verified:", pharmacy.name);
+      } catch (err: any) {
+        setError(err.message || "Failed to verify pharmacy");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err: any) {
-      console.error('❌ Registration error:', err);
-      setError(err.message || 'Registration failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+  });
 
-  // Google OAuth Registration
-  const handleGoogleSignUp = async () => {
-    setError('');
-    setIsLoading(true);
+  // ============ Step 2: User Details & Registration ============
+  const detailsFormik = useFormik({
+    initialValues: {
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "cashier" as "admin" | "pharmacist" | "cashier",
+    },
+    validationSchema: Yup.object({
+      fullName: Yup.string()
+        .required("Full name is required")
+        .min(2, "Name must be at least 2 characters"),
+      email: Yup.string()
+        .email("Invalid email address")
+        .required("Email is required"),
+      password: Yup.string()
+        .required("Password is required")
+        .min(6, "Password must be at least 6 characters"),
+      confirmPassword: Yup.string()
+        .required("Please confirm your password")
+        .oneOf([Yup.ref("password")], "Passwords must match"),
+      role: Yup.string()
+        .oneOf(["admin", "pharmacist", "cashier"])
+        .required("Role is required"),
+    }),
+    onSubmit: async (values) => {
+      setError("");
+      setIsLoading(true);
 
-    try {
-      await supabaseConnector.loginWithGoogle();
-      // User will be redirected to Google
-    } catch (err: any) {
-      console.error('❌ Google sign up error:', err);
-      setError(err.message || 'Failed to sign up with Google');
-      setIsLoading(false);
-    }
-  };
+      try {
+        await signUpWithPharmacy(
+          values.email,
+          values.password,
+          values.fullName,
+          pharmacyFormik.values.pharmacyId,
+          values.role
+        );
+
+        console.log("✅ Registration successful!");
+        router.push("/dashboard");
+      } catch (err: any) {
+        setError(err.message || "Registration failed");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+  });
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-teal-100 py-8">
-      <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">📝</div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Create Account
-          </h1>
-          <p className="text-gray-600">
-            Join our pharmacy management system
-          </p>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Google Sign Up Button */}
-        <button
-          onClick={handleGoogleSignUp}
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold text-gray-700 mb-6"
-        >
-          {isLoading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin"></div>
-              <span>Connecting...</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              <span>Sign up with Google</span>
-            </>
-          )}
-        </button>
-
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500">Or sign up with email</span>
-          </div>
-        </div>
-
-        {/* Registration Form */}
-        <form onSubmit={handleEmailSignUp} className="space-y-4">
-          {/* Full Name */}
-          <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="John Doe"
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="your.email@example.com"
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="••••••••"
-              disabled={isLoading}
-            />
-            <p className="text-xs text-gray-500 mt-1">At least 6 characters</p>
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="••••••••"
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Role Selection */}
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-              Role
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as any)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              disabled={isLoading}
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardHeader className="space-y-4">
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center gap-2">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step === "pharmacy"
+                  ? "bg-blue-600 text-white"
+                  : "bg-green-500 text-white"
+              }`}
             >
-              <option value="cashier">💼 Cashier</option>
-              <option value="pharmacist">💊 Pharmacist</option>
-              <option value="admin">👑 Admin</option>
-            </select>
+              {step === "pharmacy" ? "1" : <CheckCircle2 className="w-5 h-5" />}
+            </div>
+            <div
+              className={`h-1 w-16 ${
+                step === "pharmacy" ? "bg-gray-300" : "bg-green-500"
+              }`}
+            />
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step === "details"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-300 text-gray-600"
+              }`}
+            >
+              2
+            </div>
           </div>
 
-          {/* Sign Up Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLoading ? '🔄 Creating account...' : '✅ Create Account'}
-          </button>
+          {/* Title */}
+          <CardTitle className="text-2xl font-bold text-center">
+            {step === "pharmacy" && "Verify Pharmacy"}
+            {step === "details" && "Create Account"}
+          </CardTitle>
 
-          {/* Footer Links */}
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <a href="/login" className="text-green-600 hover:underline font-semibold">
-                Sign in
-              </a>
-            </p>
-          </div>
-        </form>
-      </div>
+          {/* Subtitle */}
+          <p className="text-center text-sm text-gray-600">
+            {step === "pharmacy" && "Enter your pharmacy ID to begin"}
+            {step === "details" &&
+              `Joining: ${pharmacyInfo?.name || "Pharmacy"}`}
+          </p>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Error Message */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* ============ Step 1: Pharmacy ID ============ */}
+          {step === "pharmacy" && (
+            <form onSubmit={pharmacyFormik.handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="pharmacyId" className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Pharmacy ID
+                </Label>
+                <Input
+                  id="pharmacyId"
+                  type="text"
+                  placeholder="e.g., abc-123-xyz"
+                  className="font-mono"
+                  {...pharmacyFormik.getFieldProps("pharmacyId")}
+                />
+                {pharmacyFormik.touched.pharmacyId &&
+                  pharmacyFormik.errors.pharmacyId && (
+                    <p className="text-sm text-red-500">
+                      {pharmacyFormik.errors.pharmacyId}
+                    </p>
+                  )}
+                <p className="text-xs text-gray-500">
+                  Get this from your pharmacy administrator
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || !pharmacyFormik.isValid}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    Verify Pharmacy
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+
+              <p className="text-center text-sm text-gray-600">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="text-blue-600 hover:underline font-semibold"
+                >
+                  Login here
+                </Link>
+              </p>
+            </form>
+          )}
+
+          {/* ============ Step 2: User Details ============ */}
+          {step === "details" && (
+            <form onSubmit={detailsFormik.handleSubmit} className="space-y-4">
+              {/* Pharmacy Info */}
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Building2 className="w-5 h-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-green-900">
+                      {pharmacyInfo?.name}
+                    </p>
+                    <p className="text-xs text-green-700">
+                      License: {pharmacyInfo?.license_number}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Full Name
+                </Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="John Doe"
+                  {...detailsFormik.getFieldProps("fullName")}
+                />
+                {detailsFormik.touched.fullName &&
+                  detailsFormik.errors.fullName && (
+                    <p className="text-sm text-red-500">
+                      {detailsFormik.errors.fullName}
+                    </p>
+                  )}
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  {...detailsFormik.getFieldProps("email")}
+                />
+                {detailsFormik.touched.email && detailsFormik.errors.email && (
+                  <p className="text-sm text-red-500">
+                    {detailsFormik.errors.email}
+                  </p>
+                )}
+              </div>
+
+              {/* Role */}
+              <div className="space-y-2">
+                <Label htmlFor="role" className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  Your Role
+                </Label>
+                <Select
+                  value={detailsFormik.values.role}
+                  onValueChange={(value) =>
+                    detailsFormik.setFieldValue("role", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cashier">💼 Cashier</SelectItem>
+                    <SelectItem value="pharmacist">💊 Pharmacist</SelectItem>
+                    <SelectItem value="admin">👑 Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Choose the role that matches your responsibilities
+                </p>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="flex items-center gap-2">
+                  <Lock className="w-4 h-4" />
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  {...detailsFormik.getFieldProps("password")}
+                />
+                {detailsFormik.touched.password &&
+                  detailsFormik.errors.password && (
+                    <p className="text-sm text-red-500">
+                      {detailsFormik.errors.password}
+                    </p>
+                  )}
+                <p className="text-xs text-gray-500">
+                  Minimum 6 characters
+                </p>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="confirmPassword"
+                  className="flex items-center gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  {...detailsFormik.getFieldProps("confirmPassword")}
+                />
+                {detailsFormik.touched.confirmPassword &&
+                  detailsFormik.errors.confirmPassword && (
+                    <p className="text-sm text-red-500">
+                      {detailsFormik.errors.confirmPassword}
+                    </p>
+                  )}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setStep("pharmacy");
+                    setPharmacyInfo(null);
+                    setError("");
+                  }}
+                  className="flex-1"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={isLoading || !detailsFormik.isValid}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Create Account
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

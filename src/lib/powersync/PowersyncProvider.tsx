@@ -14,7 +14,7 @@ import { PowerSyncContext } from '@powersync/react';
 import { Kysely } from 'kysely';
 import { PharmacyDatabase } from './schema';
 import { powerSyncClient } from './PowersyncClient';
-import { SupabaseConnector } from './PowersyncConnector';
+import { SupabaseConnector } from './SupabaseConnector';
 
 // ============ Context Types ============
 interface PowerSyncContextType {
