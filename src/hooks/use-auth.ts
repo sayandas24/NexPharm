@@ -1,35 +1,107 @@
+// hooks/use-auth.ts
+"use client";
+
 import { usePowerSync } from "@/lib/powersync/PowersyncProvider";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
+// ============ Types ============
 interface Profile {
   id: string;
   full_name: string;
-  phone: string;
-  role: "admin" | "pharmacist" | "cashier";
+  email: string;
+  avatar_url: string | null;
+  default_pharmacy_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
+interface Pharmacy {
+  id: string;
+  name: string;
+  license_number: string;
+  address: string;
+  city: string;
+  state: string;
+  phone: string;
+  email: string | null;
+  gst_number: string | null;
+  logo_url: string | null;
+}
+
+interface PharmacyMember {
+  id: string;
+  pharmacy_id: string;
+  user_id: string;
+  role: "owner" | "admin" | "pharmacist" | "cashier";
+  is_active: boolean;
+  joined_at: string;
+  pharmacies: Pharmacy;
+}
+
+// ============ Hook ============
 export default function useAuth() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [pharmacies, setPharmacies] = useState<PharmacyMember[]>([]);
+  const [currentPharmacy, setCurrentPharmacy] = useState<Pharmacy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { powerSyncDb, supabaseConnector } = usePowerSync();
 
-  // Get current user and profile
+  const { supabaseConnector } = usePowerSync();
+
+  // ============ Internal Helper: Get User Data ============
+  const fetchUserData = async (user: User) => {
+    try {
+      // Get profile
+      const { data: userProfile } = await supabaseConnector.client
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      setProfile(userProfile);
+
+      // Get user's pharmacies
+      const { data: userPharmacies } = await supabaseConnector.client
+        .from("pharmacy_members")
+        .select(`*, pharmacies:pharmacy_id (*)`)
+        .eq("user_id", user.id)
+        .eq("is_active", true);
+
+      setPharmacies(userPharmacies || []);
+
+      // Set current pharmacy
+      if (userProfile?.default_pharmacy_id && userPharmacies) {
+        const defaultPharmacy = userPharmacies.find(
+          (p) => p.pharmacy_id === userProfile.default_pharmacy_id
+        );
+        setCurrentPharmacy(defaultPharmacy?.pharmacies || null);
+      } else if (userPharmacies && userPharmacies.length > 0) {
+        setCurrentPharmacy(userPharmacies[0].pharmacies);
+      }
+    } catch (err: any) {
+      console.error("Error fetching user data:", err);
+      setError(err.message);
+    }
+  };
+
+  // ============ Get Current User ============
   const getUser = async () => {
     try {
       setLoading(true);
-      const user = await supabaseConnector.getCurrentUser();
+      const {
+        data: { user },
+      } = await supabaseConnector.client.auth.getUser();
+
       setCurrentUser(user);
 
       if (user) {
-        const userProfile = await supabaseConnector.getUserProfile(user.id);
-        setProfile(userProfile);
+        await fetchUserData(user);
       } else {
         setProfile(null);
+        setPharmacies([]);
+        setCurrentPharmacy(null);
       }
     } catch (err: any) {
       console.error("Error fetching user:", err);
@@ -39,12 +111,21 @@ export default function useAuth() {
     }
   };
 
-  // Sign in with email and password
+  // ============ Sign In ============
   const signInWithPassword = async (email: string, password: string) => {
     try {
       setLoading(true);
       setError(null);
-      await supabaseConnector.signInWithPassword(email, password);
+
+      const { data, error } =
+        await supabaseConnector.client.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      if (error) throw error;
+
+      console.log("✅ Login successful");
       await getUser();
     } catch (err: any) {
       setError(err.message);
@@ -54,23 +135,67 @@ export default function useAuth() {
     }
   };
 
-  // Sign up with email and password
-  const signUp = async (email: string, password: string, fullName: string) => {
+  // ============ Sign Up ============
+  const signUpWithPharmacy = async (
+    email: string,
+    password: string,
+    fullName: string,
+    pharmacyId: string,
+    role: "admin" | "pharmacist" | "cashier"
+  ) => {
     try {
       setLoading(true);
       setError(null);
-      const { user } = await supabaseConnector.signUpWithEmail(
-        email,
-        password,
-        fullName
-      );
 
-      // Create profile if user was created
-      if (user) {
-        await supabaseConnector.createProfile(user.id, fullName, email);
+      // Verify pharmacy exists
+      const { data: pharmacy, error: pharmacyError } =
+        await supabaseConnector.client
+          .from("pharmacies")
+          .select("id, name")
+          .eq("id", pharmacyId)
+          .single();
+
+      if (pharmacyError || !pharmacy) {
+        throw new Error("Invalid Pharmacy ID");
       }
 
-      await getUser();
+      // Create auth user
+      const { data, error } = await supabaseConnector.client.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      });
+
+      if (error) throw error;
+
+      // fix rls issue with remove password signup and add Email OTP (6-Digit Code) - Recommended
+      // await supabaseConnector.client.auth.signOut();
+      if (data.user) {
+        console.log("✅ User created:", data, pharmacyId, email, fullName);
+        // Create profile
+        const response = await supabaseConnector.client.from("profiles").insert({
+          id: data.user.id,
+          full_name: fullName,
+          email: email,
+          avatar_url: null,
+          default_pharmacy_id: pharmacyId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        console.log("✅ Profile created:", response);
+
+        // Create pharmacy member
+        const memberRes = await supabaseConnector.client.from("pharmacy_members").insert({
+          pharmacy_id: pharmacyId,
+          user_id: data.user.id,
+          role: role,
+          is_active: true,
+          joined_at: new Date().toISOString(),
+        });
+        console.log("✅ Pharmacy member created:", memberRes);
+
+        console.log("✅ Sign up successful!");
+      }
     } catch (err: any) {
       setError(err.message);
       throw err;
@@ -79,43 +204,63 @@ export default function useAuth() {
     }
   };
 
-  // Sign in with magic link
-  const signInWithEmail = async (email: string) => {
+  // ============ Verify Pharmacy ID ============
+  const verifyPharmacyId = async (pharmacyId: string) => {
     try {
-      setLoading(true);
-      setError(null);
-      await supabaseConnector.signInWithEmail(email);
+      const { data, error } = await supabaseConnector.client
+        .from("pharmacies")
+        .select("id, name, license_number")
+        .eq("id", pharmacyId)
+        .single();
+
+      if (error || !data) return null;
+      return data;
     } catch (err: any) {
       setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
+      return null;
     }
   };
 
-  // Sign in with Google
-  const signInWithGoogle = async () => {
+  // ============ Switch Pharmacy ============
+  const switchPharmacy = async (pharmacyId: string) => {
     try {
-      setLoading(true);
-      setError(null);
-      await supabaseConnector.loginWithGoogle();
-      // Note: Profile creation happens in the auth state listener after redirect
+      const pharmacy = pharmacies.find((p) => p.pharmacy_id === pharmacyId);
+      if (!pharmacy) throw new Error("Pharmacy not found");
+
+      setCurrentPharmacy(pharmacy.pharmacies);
+
+      if (currentUser) {
+        await supabaseConnector.client
+          .from("profiles")
+          .update({ default_pharmacy_id: pharmacyId })
+          .eq("id", currentUser.id);
+      }
+
+      console.log("✅ Switched to pharmacy:", pharmacy.pharmacies.name);
     } catch (err: any) {
       setError(err.message);
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Logout
+  // ============ Get Current Role ============
+  const getCurrentRole = () => {
+    if (!currentPharmacy) return null;
+    const membership = pharmacies.find(
+      (p) => p.pharmacy_id === currentPharmacy.id
+    );
+    return membership?.role || null;
+  };
+
+  // ============ Logout ============
   const logout = async () => {
     try {
       setLoading(true);
-      setError(null);
-      await supabaseConnector.logout();
+      await supabaseConnector.client.auth.signOut();
       setCurrentUser(null);
       setProfile(null);
+      setPharmacies([]);
+      setCurrentPharmacy(null);
     } catch (err: any) {
       setError(err.message);
       throw err;
@@ -124,143 +269,85 @@ export default function useAuth() {
     }
   };
 
-  // Update profile
+  // ============ Update Profile ============
   const updateProfile = async (updates: {
     full_name?: string;
-    phone?: string;
-    role?: "admin" | "pharmacist" | "cashier";
+    email?: string;
   }) => {
     try {
       if (!currentUser) throw new Error("No user logged in");
 
-      setLoading(true);
-      setError(null);
-      const updatedProfile = await supabaseConnector.updateProfile(
-        currentUser.id,
-        updates
-      );
-      setProfile(updatedProfile);
-      return updatedProfile;
+      const { data, error } = await supabaseConnector.client
+        .from("profiles")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", currentUser.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+      return data;
     } catch (err: any) {
       setError(err.message);
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Reset password
+  // ============ Reset Password ============
   const resetPassword = async (email: string) => {
     try {
-      setLoading(true);
-      setError(null);
-      await supabaseConnector.resetPassword(email);
+      const { error } =
+        await supabaseConnector.client.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/reset-password`,
+        });
+      if (error) throw error;
     } catch (err: any) {
       setError(err.message);
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Update password
-  const updatePassword = async (newPassword: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await supabaseConnector.updatePassword(newPassword);
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Check if email is registered
-  const isEmailRegistered = async (email: string) => {
-    try {
-      return await supabaseConnector.isEmailRegistered(email);
-    } catch (err: any) {
-      console.error("Error checking email:", err);
-      return false;
-    }
-  };
-
-  // Initialize auth state on mount
+  // ============ Initialize ============
   useEffect(() => {
     getUser();
 
-    // Listen to auth state changes
     const { data: authListener } =
       supabaseConnector.client.auth.onAuthStateChange(
         async (event, session) => {
-          console.log("Auth state changed:", event);
-
           if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-            const user = session?.user;
-            console.log(user, "user in auth listen")
-            if (user) {
-              // Check if profile exists
-              const existingProfile = await supabaseConnector.getUserProfile(
-                user.id
-              );
-              console.log(existingProfile, "existingProfile in auth listen")
-
-              // Create profile if it doesn't exist (Google OAuth case)
-              if (!existingProfile) {
-                try {
-                  const fullName =
-                    user.user_metadata?.full_name ||
-                    user.user_metadata?.name ||
-                    user.email?.split("@")[0] ||
-                    "User";
-                  const email = user.email || "";
-
-                  await supabaseConnector.createProfile(
-                    user.id,
-                    fullName,
-                    email,
-                    "cashier" // Default role
-                  );
-                  console.log("✅ Profile auto-created for OAuth user");
-                } catch (error) {
-                  console.error("Failed to create profile:", error);
-                }
-              }
-            }
-
             await getUser();
           } else if (event === "SIGNED_OUT") {
             setCurrentUser(null);
             setProfile(null);
+            setPharmacies([]);
+            setCurrentPharmacy(null);
           }
         }
       );
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => authListener.subscription.unsubscribe();
   }, []);
 
+  // ============ Return ============
   return {
     // State
     currentUser,
     profile,
+    pharmacies,
+    currentPharmacy,
+    currentRole: getCurrentRole(),
     loading,
     error,
     isAuthenticated: !!currentUser,
 
     // Methods
-    getUser,
     signInWithPassword,
-    signUp,
-    signInWithEmail,
-    signInWithGoogle,
+    signUpWithPharmacy,
+    verifyPharmacyId,
+    switchPharmacy,
     logout,
     updateProfile,
     resetPassword,
-    updatePassword,
-    isEmailRegistered,
+    getUser,
   };
 }
