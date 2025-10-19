@@ -2,8 +2,9 @@
 import { PowerSyncDatabase } from '@powersync/web';
 import { wrapPowerSyncWithKysely } from '@powersync/kysely-driver';
 import { Kysely } from 'kysely';
-import { AppSchema, PharmacyDatabase } from './schema';
+import { AppSchema } from './schema';
 import { SupabaseConnector } from './SupabaseConnector';
+import { PharmacyDatabase } from '@/types/database-types';
 
 export class PowerSyncClient {
   private static instance: PowerSyncClient | null = null;

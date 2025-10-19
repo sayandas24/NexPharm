@@ -12,9 +12,9 @@ import React, {
 import { PowerSyncDatabase } from '@powersync/web';
 import { PowerSyncContext } from '@powersync/react';
 import { Kysely } from 'kysely';
-import { PharmacyDatabase } from './schema';
 import { powerSyncClient } from './PowersyncClient';
 import { SupabaseConnector } from './SupabaseConnector';
+import { PharmacyDatabase } from '@/types/database-types';
 
 // ============ Context Types ============
 interface PowerSyncContextType {

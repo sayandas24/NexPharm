@@ -32,6 +32,22 @@ export interface PharmacyMemberTable {
   joined_at: string;
 }
 
+// NEW: Pharmacy Medicines Junction Table Type
+export interface PharmacyMedicineTable {
+  id: string;
+  pharmacy_id: string;
+  medicine_id: string;
+  mrp: number; // numeric(10,2) in Supabase
+  price_range_min: number; // numeric(10,2)
+  price_range_max: number; // numeric(10,2)
+  stock_quantity: number; // integer, default 0
+  reorder_level: number; // integer, default 10
+  storage_conditions: string | null;
+  is_available: number; // SQLite boolean (true in Supabase)
+  created_at: string;
+  updated_at: string;
+}
+
 // UPDATED: Profile Table Type
 export interface ProfileTable {
   id: string;
@@ -57,19 +73,35 @@ export interface SupplierTable {
   updated_at: string;
 }
 
-// UPDATED: Medicine Table Type
-export interface MedicineTable {
+// UPDATED: Medicine Table Type (Master Catalog - No pharmacy_id)
+// Only id and name are required, all other fields are optional
+export interface MedicinesTable {
   id: string;
-  pharmacy_id: string; // NEW
   name: string;
   generic_name: string | null;
+  brand_names: string | null;
   manufacturer: string | null;
   category: string | null;
+  strength: string | null;
+  pack_size: string | null;
+  how_to_use: string | null;
+  dosage_adults: string | null;
+  dosage_children: string | null;
+  dosage_elderly: string | null;
+  duration: string | null;
+  side_effects: string | null; // stored as text/JSON
+  warnings: string | null; // stored as text/JSON
+  shelf_life: string | null;
   barcode: string | null;
-  unit_type: "strip" | "bottle" | "tube" | "piece" | null;
-  reorder_level: number;
-  storage_condition: string | null;
-  requires_prescription: number; // SQLite boolean
+  requires_prescription: number | null; // SQLite boolean
+  medicine_image_url: string | null;
+  medicine_images: string | null; // JSON string
+  package_image_url: string | null;
+  unit_type: string | null;
+  medicine_group: string | null;
+  tags: string | null; // stored as text/JSON
+  is_active: number | null; // SQLite boolean
+  is_otc: number | null; // SQLite boolean (Over The Counter)
   created_at: string;
   updated_at: string;
 }
@@ -77,7 +109,7 @@ export interface MedicineTable {
 // UPDATED: Medicine Batch Table Type
 export interface MedicineBatchTable {
   id: string;
-  pharmacy_id: string; // NEW
+  pharmacy_id: string;
   medicine_id: string;
   supplier_id: string | null;
   batch_number: string;
@@ -96,7 +128,7 @@ export interface MedicineBatchTable {
 // UPDATED: Customer Table Type
 export interface CustomerTable {
   id: string;
-  pharmacy_id: string; // NEW
+  pharmacy_id: string;
   name: string;
   phone: string;
   email: string | null;
@@ -109,7 +141,7 @@ export interface CustomerTable {
 // UPDATED: Sale Table Type
 export interface SaleTable {
   id: string;
-  pharmacy_id: string; // NEW
+  pharmacy_id: string;
   invoice_number: string;
   customer_id: string | null;
   user_id: string;
@@ -123,7 +155,7 @@ export interface SaleTable {
   updated_at: string;
 }
 
-// Sale Item Table Type (unchanged)
+// Sale Item Table Type
 export interface SaleItemTable {
   id: string;
   sale_id: string;
@@ -142,7 +174,7 @@ export interface SaleItemTable {
 // UPDATED: Expiry Alert Table Type
 export interface ExpiryAlertTable {
   id: string;
-  pharmacy_id: string; // NEW
+  pharmacy_id: string;
   medicine_batch_id: string;
   alert_type: "15_days" | "30_days" | "90_days" | "expired";
   is_acknowledged: number; // SQLite boolean
@@ -154,7 +186,7 @@ export interface ExpiryAlertTable {
 // UPDATED: Stock Alert Table Type
 export interface StockAlertTable {
   id: string;
-  pharmacy_id: string; // NEW
+  pharmacy_id: string;
   medicine_id: string;
   current_stock: number;
   reorder_level: number;
@@ -164,11 +196,12 @@ export interface StockAlertTable {
 
 // UPDATED: Kysely Database Interface
 export interface PharmacyDatabase {
-  pharmacies: PharmacyTable; // NEW
-  pharmacy_members: PharmacyMemberTable; // NEW
+  pharmacies: PharmacyTable;
+  pharmacy_members: PharmacyMemberTable;
+  pharmacy_medicines: PharmacyMedicineTable; // Junction table
   profiles: ProfileTable;
   suppliers: SupplierTable;
-  medicines: MedicineTable;
+  medicines: MedicinesTable; // Master catalog (only id and name required)
   medicine_batches: MedicineBatchTable;
   customers: CustomerTable;
   sales: SaleTable;

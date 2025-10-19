@@ -3,7 +3,7 @@ import { column, Schema, Table } from '@powersync/web';
 
 // ============ Table Definitions ============
 
-// PHARMACIES TABLE (NEW)
+// PHARMACIES TABLE
 const pharmacies = new Table(
   {
     name: column.text,
@@ -31,7 +31,7 @@ const pharmacies = new Table(
   }
 );
 
-// PHARMACY MEMBERS TABLE (NEW)
+// PHARMACY MEMBERS TABLE
 const pharmacy_members = new Table(
   {
     pharmacy_id: column.text,
@@ -50,20 +50,20 @@ const pharmacy_members = new Table(
   }
 );
 
-// PROFILES TABLE (UPDATED)
+// PROFILES TABLE
 const profiles = new Table({
   full_name: column.text,
   email: column.text,
   avatar_url: column.text,
-  default_pharmacy_id: column.text, // NEW: Default/last selected pharmacy
+  default_pharmacy_id: column.text,
   created_at: column.text,
   updated_at: column.text,
 });
 
-// SUPPLIERS TABLE (UPDATED - added pharmacy_id)
+// SUPPLIERS TABLE
 const suppliers = new Table(
   {
-    pharmacy_id: column.text, // NEW: Multi-tenancy field
+    pharmacy_id: column.text,
     name: column.text,
     contact_person: column.text,
     phone: column.text,
@@ -75,40 +75,80 @@ const suppliers = new Table(
   },
   {
     indexes: {
-      pharmacy_idx: ['pharmacy_id'], // NEW
+      pharmacy_idx: ['pharmacy_id'],
     },
   }
 );
 
-// MEDICINES TABLE (UPDATED - added pharmacy_id)
+// ✅ MEDICINES TABLE - GLOBAL CATALOG (NO pharmacy_id!)
 const medicines = new Table(
   {
-    pharmacy_id: column.text, // NEW: Multi-tenancy field
     name: column.text,
     generic_name: column.text,
+    brand_names: column.text,
     manufacturer: column.text,
     category: column.text,
+    strength: column.text,
+    pack_size: column.text,
+    how_to_use: column.text,
+    dosage_adults: column.text,
+    dosage_children: column.text,
+    dosage_elderly: column.text,
+    duration: column.text,
+    side_effects: column.text,
+    warnings: column.text,
+    shelf_life: column.text,
     barcode: column.text,
-    unit_type: column.text,
-    reorder_level: column.integer,
-    storage_condition: column.text,
     requires_prescription: column.integer,
+    medicine_image_url: column.text,
+    medicine_images: column.text, // JSON
+    package_image_url: column.text,
+    unit_type: column.text,
+    medicine_group: column.text,
+    tags: column.text,
+    is_active: column.integer,
+    is_otc: column.integer,
     created_at: column.text,
     updated_at: column.text,
   },
   {
     indexes: {
-      pharmacy_idx: ['pharmacy_id'], // NEW
-      barcode_idx: ['pharmacy_id', 'barcode'], // UPDATED: Composite index
-      name_idx: ['pharmacy_id', 'name'], // UPDATED: Composite index
+      barcode_idx: ['barcode'],
+      name_idx: ['name'],
+      active_idx: ['is_active'],
     },
   }
 );
 
-// MEDICINE BATCHES TABLE (UPDATED - added pharmacy_id)
+// ✅ NEW: PHARMACY MEDICINES JUNCTION TABLE
+const pharmacy_medicines = new Table(
+  {
+    pharmacy_id: column.text,
+    medicine_id: column.text,
+    mrp: column.real,
+    price_range_min: column.real,
+    price_range_max: column.real,
+    stock_quantity: column.integer,
+    reorder_level: column.integer,
+    storage_conditions: column.text,
+    is_available: column.integer,
+    created_at: column.text,
+    updated_at: column.text,
+  },
+  {
+    indexes: {
+      pharmacy_idx: ['pharmacy_id'],
+      medicine_idx: ['medicine_id'],
+      composite_idx: ['pharmacy_id', 'medicine_id'],
+      available_idx: ['pharmacy_id', 'is_available'],
+    },
+  }
+);
+
+// MEDICINE BATCHES TABLE
 const medicine_batches = new Table(
   {
-    pharmacy_id: column.text, // NEW: Multi-tenancy field
+    pharmacy_id: column.text,
     medicine_id: column.text,
     supplier_id: column.text,
     batch_number: column.text,
@@ -125,18 +165,18 @@ const medicine_batches = new Table(
   },
   {
     indexes: {
-      pharmacy_idx: ['pharmacy_id'], // NEW
-      medicine_idx: ['pharmacy_id', 'medicine_id'], // UPDATED: Composite
-      expiry_idx: ['pharmacy_id', 'expiry_date'], // UPDATED: Composite
-      batch_number_idx: ['pharmacy_id', 'batch_number'], // UPDATED: Composite
+      pharmacy_idx: ['pharmacy_id'],
+      medicine_idx: ['pharmacy_id', 'medicine_id'],
+      expiry_idx: ['pharmacy_id', 'expiry_date'],
+      batch_number_idx: ['pharmacy_id', 'batch_number'],
     },
   }
 );
 
-// CUSTOMERS TABLE (UPDATED - added pharmacy_id)
+// CUSTOMERS TABLE
 const customers = new Table(
   {
-    pharmacy_id: column.text, // NEW: Multi-tenancy field
+    pharmacy_id: column.text,
     name: column.text,
     phone: column.text,
     email: column.text,
@@ -147,17 +187,17 @@ const customers = new Table(
   },
   {
     indexes: {
-      pharmacy_idx: ['pharmacy_id'], // NEW
-      phone_idx: ['pharmacy_id', 'phone'], // UPDATED: Composite
-      email_idx: ['pharmacy_id', 'email'], // UPDATED: Composite
+      pharmacy_idx: ['pharmacy_id'],
+      phone_idx: ['pharmacy_id', 'phone'],
+      email_idx: ['pharmacy_id', 'email'],
     },
   }
 );
 
-// SALES TABLE (UPDATED - added pharmacy_id)
+// SALES TABLE
 const sales = new Table(
   {
-    pharmacy_id: column.text, // NEW: Multi-tenancy field
+    pharmacy_id: column.text,
     invoice_number: column.text,
     customer_id: column.text,
     user_id: column.text,
@@ -172,19 +212,20 @@ const sales = new Table(
   },
   {
     indexes: {
-      pharmacy_idx: ['pharmacy_id'], // NEW
-      user_idx: ['pharmacy_id', 'user_id'], // UPDATED: Composite
-      customer_idx: ['pharmacy_id', 'customer_id'], // UPDATED: Composite
-      created_idx: ['pharmacy_id', 'created_at'], // UPDATED: Composite
-      invoice_idx: ['pharmacy_id', 'invoice_number'], // UPDATED: Composite
+      pharmacy_idx: ['pharmacy_id'],
+      user_idx: ['pharmacy_id', 'user_id'],
+      customer_idx: ['pharmacy_id', 'customer_id'],
+      created_idx: ['pharmacy_id', 'created_at'],
+      invoice_idx: ['pharmacy_id', 'invoice_number'],
     },
   }
 );
 
-// SALE ITEMS TABLE (unchanged - inherits pharmacy from sales)
+// SALE ITEMS TABLE (✅ NOW WITH pharmacy_id)
 const sale_items = new Table(
   {
     sale_id: column.text,
+    pharmacy_id: column.text, // ✅ ADDED
     medicine_batch_id: column.text,
     medicine_name: column.text,
     batch_number: column.text,
@@ -199,14 +240,15 @@ const sale_items = new Table(
   {
     indexes: {
       sale_idx: ['sale_id'],
+      pharmacy_idx: ['pharmacy_id'], // ✅ ADDED
     },
   }
 );
 
-// EXPIRY ALERTS TABLE (UPDATED - added pharmacy_id)
+// EXPIRY ALERTS TABLE
 const expiry_alerts = new Table(
   {
-    pharmacy_id: column.text, // NEW: Multi-tenancy field
+    pharmacy_id: column.text,
     medicine_batch_id: column.text,
     alert_type: column.text,
     is_acknowledged: column.integer,
@@ -216,17 +258,17 @@ const expiry_alerts = new Table(
   },
   {
     indexes: {
-      pharmacy_idx: ['pharmacy_id'], // NEW
-      batch_idx: ['pharmacy_id', 'medicine_batch_id'], // UPDATED: Composite
-      acknowledged_idx: ['pharmacy_id', 'is_acknowledged'], // UPDATED: Composite
+      pharmacy_idx: ['pharmacy_id'],
+      batch_idx: ['pharmacy_id', 'medicine_batch_id'],
+      acknowledged_idx: ['pharmacy_id', 'is_acknowledged'],
     },
   }
 );
 
-// STOCK ALERTS TABLE (UPDATED - added pharmacy_id)
+// STOCK ALERTS TABLE
 const stock_alerts = new Table(
   {
-    pharmacy_id: column.text, // NEW: Multi-tenancy field
+    pharmacy_id: column.text,
     medicine_id: column.text,
     current_stock: column.integer,
     reorder_level: column.integer,
@@ -235,20 +277,21 @@ const stock_alerts = new Table(
   },
   {
     indexes: {
-      pharmacy_idx: ['pharmacy_id'], // NEW
-      medicine_idx: ['pharmacy_id', 'medicine_id'], // UPDATED: Composite
-      resolved_idx: ['pharmacy_id', 'is_resolved'], // UPDATED: Composite
+      pharmacy_idx: ['pharmacy_id'],
+      medicine_idx: ['pharmacy_id', 'medicine_id'],
+      resolved_idx: ['pharmacy_id', 'is_resolved'],
     },
   }
 );
 
 // ============ Export Schema ============
 export const AppSchema = new Schema({
-  pharmacies, // NEW
-  pharmacy_members, // NEW
+  pharmacies,
+  pharmacy_members,
   profiles,
   suppliers,
-  medicines,
+  medicines, // ✅ Global catalog (no pharmacy_id)
+  pharmacy_medicines, // ✅ ADDED - Junction table
   medicine_batches,
   customers,
   sales,
@@ -256,7 +299,6 @@ export const AppSchema = new Schema({
   expiry_alerts,
   stock_alerts,
 });
-
 
 // Export types
 export type Database = (typeof AppSchema)['types'];
