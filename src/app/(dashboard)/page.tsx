@@ -4,6 +4,7 @@ import { useMedicines } from "@/hooks/useMedicines";
 import { useKyselyDB } from "@/lib/powersync/PowersyncProvider";
 import { useRouter } from "next/navigation";
 import React from "react";
+import {v4 as uuidv4} from 'uuid';
 
 export default function HomePage() {
   const { currentUser, profile, logout } = useAuth();
@@ -11,10 +12,10 @@ export default function HomePage() {
 
   const db = useKyselyDB();
 
-  const { medicines, searchMedicinesByName, searchMedicine } = useMedicines();
+  const { medicines, searchMedicinesByName, searchMedicine, fetchMedicines } = useMedicines();
 
   const fetchData = async () => {
-     
+    await fetchMedicines()
   };
 
   // Check what tables PowerSync has created
@@ -45,6 +46,26 @@ export default function HomePage() {
       console.error("Error checking tables:", error);
     }
   };
+  // Check what tables PowerSync has created
+  const addMedicines = async () => {
+    try {
+      // Query SQLite master table to see all tables
+      const tables = await db
+        .insertInto("medicines")
+        .values({
+          id: uuidv4(),
+          name: "Test46e",
+          generic_name: "Acetaminophen",
+          strength: "500mg",
+          manufacturer: "Johnson & Johnson", 
+        })
+        .execute();
+
+      console.log("Adding medicine:", tables);
+    } catch (error) {
+      console.error("Error checking tables:", error);
+    }
+  };
 
   const toLogin = () => {
     router.push("/login");
@@ -59,15 +80,22 @@ export default function HomePage() {
     <div className="p-10 bg-black min-h-screen">
       <button
         onClick={fetchData}
-        className="text-white border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
+        className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
       >
         Fetch Data
       </button>
       <button
         onClick={checkTables}
-        className="text-white border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
+        className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
       >
         checkTables
+      </button>
+
+      <button
+        onClick={addMedicines}
+        className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
+      >
+        Add Into Medicines
       </button>
       <button
         onClick={toLogin}

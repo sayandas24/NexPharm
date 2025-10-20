@@ -102,8 +102,8 @@ export interface MedicinesTable {
   tags: string | null; // stored as text/JSON
   is_active: number | null; // SQLite boolean
   is_otc: number | null; // SQLite boolean (Over The Counter)
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // UPDATED: Medicine Batch Table Type

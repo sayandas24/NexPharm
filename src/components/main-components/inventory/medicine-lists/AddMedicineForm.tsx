@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import useMedicineCRUD from '@/hooks/useMedicineCRUD';
+import { MedicinesTable } from '@/types/database-types';
 import { v4 as uuidv4 } from 'uuid';
 
 const medicineSchema = Yup.object().shape({
@@ -35,9 +36,6 @@ const medicineSchema = Yup.object().shape({
   brand_names: Yup.string().nullable(),
   manufacturer: Yup.string().nullable(),
   category: Yup.string().nullable(),
-  mrp: Yup.number().min(0, 'Must be positive').nullable(),
-  price_range_min: Yup.number().min(0, 'Must be positive').nullable(),
-  price_range_max: Yup.number().min(0, 'Must be positive').nullable(),
   strength: Yup.string().nullable(),
   pack_size: Yup.string().nullable(),
   how_to_use: Yup.string().nullable(),
@@ -49,13 +47,15 @@ const medicineSchema = Yup.object().shape({
   warnings: Yup.string().nullable(),
   shelf_life: Yup.string().nullable(),
   barcode: Yup.string().nullable(),
-  requires_prescription: Yup.boolean(),
+  requires_prescription: Yup.number().oneOf([0, 1]).nullable(),
   medicine_image_url: Yup.string().url('Invalid URL').nullable(),
   medicine_images: Yup.string().nullable(),
   package_image_url: Yup.string().url('Invalid URL').nullable(),
+  unit_type: Yup.string().nullable(),
+  medicine_group: Yup.string().nullable(),
   tags: Yup.string().nullable(),
-  is_active: Yup.boolean(),
-  is_otc: Yup.boolean(),
+  is_active: Yup.number().oneOf([0, 1]).nullable(),
+  is_otc: Yup.number().oneOf([0, 1]).nullable(),
 });
 
 interface AddMedicineFormProps {
@@ -64,13 +64,13 @@ interface AddMedicineFormProps {
 
 export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
   
-  const {addMedicine,error,loading} = useMedicineCRUD()
+  const { createMedicine ,error,loading} = useMedicineCRUD()
 
   const handleSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
     try {
-      const res = await addMedicine({
+      const res = await createMedicine({
         id: uuidv4(),
-        ...values,
+        ...values
       });
       console.log(res, "Medicine adding response")
       toast.success('Medicine added successfully!');
@@ -88,31 +88,30 @@ export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
     <Formik
       initialValues={{
         name: '',
-        generic_name: '',
-        brand_names: '',
-        manufacturer: '',
-        category: '',
-        mrp: '',
-        price_range_min: '',
-        price_range_max: '',
-        strength: '',
-        pack_size: '',
-        how_to_use: '',
-        dosage_adults: '',
-        dosage_children: '',
-        dosage_elderly: '',
-        duration: '',
-        side_effects: '',
-        warnings: '',
-        shelf_life: '',
-        barcode: '',
-        requires_prescription: false,
-        medicine_image_url: '',
-        medicine_images: '',
-        package_image_url: '',
-        tags: '',
-        is_active: true,
-        is_otc: false,
+        generic_name: null,
+        brand_names: null,
+        manufacturer: null,
+        category: null,
+        strength: null,
+        pack_size: null,
+        how_to_use: null,
+        dosage_adults: null,
+        dosage_children: null,
+        dosage_elderly: null,
+        duration: null,
+        side_effects: null,
+        warnings: null,
+        shelf_life: null,
+        barcode: null,
+        requires_prescription: 0,
+        medicine_image_url: null,
+        medicine_images: null,
+        package_image_url: null,
+        unit_type: null,
+        medicine_group: null,
+        tags: null,
+        is_active: 1,
+        is_otc: 0,
       }}
       validationSchema={medicineSchema}
       onSubmit={handleSubmit}
@@ -176,7 +175,7 @@ export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
                 <Label htmlFor="category">Category</Label>
                 <Select
                   onValueChange={(value) => setFieldValue('category', value)}
-                  value={values.category}
+                  value={values.category || ''}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -433,9 +432,9 @@ export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="requires_prescription"
-                  checked={values.requires_prescription}
+                  checked={values.requires_prescription === 1}
                   onCheckedChange={(checked) =>
-                    setFieldValue('requires_prescription', checked)
+                    setFieldValue('requires_prescription', checked ? 1 : 0)
                   }
                 />
                 <Label htmlFor="requires_prescription" className="cursor-pointer">
@@ -446,8 +445,8 @@ export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_otc"
-                  checked={values.is_otc}
-                  onCheckedChange={(checked) => setFieldValue('is_otc', checked)}
+                  checked={values.is_otc === 1}
+                  onCheckedChange={(checked) => setFieldValue('is_otc', checked ? 1 : 0)}
                 />
                 <Label htmlFor="is_otc" className="cursor-pointer">
                   Over-the-Counter (OTC) Medicine
@@ -457,8 +456,8 @@ export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_active"
-                  checked={values.is_active}
-                  onCheckedChange={(checked) => setFieldValue('is_active', checked)}
+                  checked={values.is_active === 1}
+                  onCheckedChange={(checked) => setFieldValue('is_active', checked ? 1 : 0)}
                 />
                 <Label htmlFor="is_active" className="cursor-pointer">
                   Active in Inventory

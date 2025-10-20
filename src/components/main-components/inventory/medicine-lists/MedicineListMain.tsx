@@ -29,12 +29,24 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import toast from "react-hot-toast";
 import { AddMedicineForm } from "./AddMedicineForm";
+import useAuth from "@/hooks/use-auth";
 
 export default function MedicineListMain() {
-  const { medicines, loading, searchMedicinesByName } = useMedicines();
+  const { currentPharmacy } = useAuth();
 
+  const { medicines, loading, searchMedicinesByName } = useMedicines(
+    currentPharmacy?.id
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMedicines, setFilteredMedicines] = useState(medicines);
   const [selectedGroup, setSelectedGroup] = useState("all");
@@ -46,7 +58,7 @@ export default function MedicineListMain() {
   const handleSearch = async (value: string) => {
     setSearchTerm(value);
     if (value.trim()) {
-      const results = await searchMedicinesByName(value);
+      const results = await searchMedicinesByName(value, currentPharmacy?.id);
       setFilteredMedicines(results);
     } else {
       setFilteredMedicines(medicines);
@@ -56,17 +68,14 @@ export default function MedicineListMain() {
 
   const displayMedicines = searchTerm ? filteredMedicines : medicines;
 
-  // Filter by category/group
-  const filteredByCategory =
-    selectedCategory === "all"
-      ? displayMedicines
-      : displayMedicines.filter((med) => med.category === selectedCategory);
-
-  // Filter by category/group
-  const filteredByGroup =
-    selectedCategory === "all"
-      ? displayMedicines
-      : displayMedicines.filter((med) => med.medicine_group === selectedGroup);
+  // Apply both category and group filters
+  const fullyFilteredMedicines = displayMedicines.filter((med) => {
+    const categoryMatch =
+      selectedCategory === "all" || med.category === selectedCategory;
+    const groupMatch =
+      selectedGroup === "all" || med.medicine_group === selectedGroup;
+    return categoryMatch && groupMatch;
+  });
 
   // Get unique categories
   const categories = Array.from(
@@ -78,15 +87,37 @@ export default function MedicineListMain() {
   );
 
   // Pagination
-  const totalPages = Math.ceil(filteredByGroup.length / itemsPerPage);
+  const totalPages = Math.ceil(fullyFilteredMedicines.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedMedicines = filteredByGroup.slice(startIndex, endIndex);
+  const paginatedMedicines = fullyFilteredMedicines.slice(startIndex, endIndex);
 
   const handleMedicineAdded = () => {
     setIsDrawerOpen(false);
     toast.success("Medicine added successfully!");
   };
+
+  const handleCatChange = (e: any) => {
+    setSelectedCategory(e);
+    setCurrentPage(1);
+  };
+
+  const handleGroupChange = (e: any) => {
+    setSelectedGroup(e);
+    setCurrentPage(1);
+  };
+
+  // Guard clause for no pharmacy
+  if (!currentPharmacy) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600">No pharmacy selected</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -106,7 +137,7 @@ export default function MedicineListMain() {
         <div className="flex items-center text-sm text-gray-500 mb-2">
           <span className="font-semibold text-gray-700">Inventory</span>
           <ChevronRight className="h-4 w-4 mx-1" />
-          <span>List of Medicines ({filteredByGroup.length})</span>
+          <span>List of Medicines ({fullyFilteredMedicines.length})</span>
         </div>
         <p className="text-gray-600">List of medicines available for sales.</p>
       </div>
@@ -118,7 +149,7 @@ export default function MedicineListMain() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search Medicine Inventory.."
+                placeholder="Search by name, category, group.."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
@@ -129,12 +160,9 @@ export default function MedicineListMain() {
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-400" />
-              <Select
-                value={selectedCategory}
-                onValueChange={setSelectedCategory}
-              >
+              <Select value={selectedCategory} onValueChange={handleCatChange}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="- Select Group -" />
+                  <SelectValue placeholder="- Select Category -" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Category</SelectItem>
@@ -146,12 +174,11 @@ export default function MedicineListMain() {
                 </SelectContent>
               </Select>
               <Filter className="h-4 w-4 text-gray-400" />
-              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+              <Select value={selectedGroup} onValueChange={handleGroupChange}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="- Select Group -" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* mark */}
                   <SelectItem value="all">All Group</SelectItem>
                   {groups.map((g) => (
                     <SelectItem key={g} value={g || ""}>
@@ -162,7 +189,6 @@ export default function MedicineListMain() {
               </Select>
             </div>
 
-            {/* Mark Sheeeeet */}
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <SheetTrigger asChild>
                 <Button className="bg-red-500 hover:bg-red-600">
@@ -193,79 +219,67 @@ export default function MedicineListMain() {
           <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold mb-2">No medicines found</h3>
           <p className="text-gray-500 mb-4">
-            {searchTerm
-              ? "Try adjusting your search term"
+            {searchTerm || selectedCategory !== "all" || selectedGroup !== "all"
+              ? "Try adjusting your search term or filters"
               : "Get started by adding your first medicine"}
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Medicine Name
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Medicine ID
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Category
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Group
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Stock in Qty
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {paginatedMedicines.map((medicine) => (
-                  <tr
-                    key={medicine.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {medicine.name}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 font-mono">
-                      {medicine.id.substring(0, 15)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.category || "Generic Medicine"}
-                    </td>
-                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {medicine.medicine_group || "Generic Medicine"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {/* This would come from batches - placeholder for now */}
-                      <Badge variant="outline">N/A</Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Button
-                        variant="link"
-                        className="text-blue-600 hover:text-blue-700 p-0 h-auto font-normal"
-                      >
-                        View Full Detail »
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="bg-white rounded-lg shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Medicine Name</TableHead>
+                <TableHead>Medicine ID</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Group</TableHead>
+                <TableHead>Stock in Qty</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedMedicines.map((medicine) => (
+                <TableRow key={medicine.id}>
+                  <TableCell className="font-medium">
+                    {medicine.name}
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {medicine.id.substring(0, 15)}
+                  </TableCell>
+                  <TableCell>
+                    {medicine.category || "Generic Medicine"}
+                  </TableCell>
+                  <TableCell>
+                    {medicine.medicine_group || "Generic Medicine"}
+                  </TableCell>
+                  <TableCell>
+                    {medicine?.stock_quantity && medicine?.stock_quantity > 0 ? (
+                      <Badge variant="outline">
+                        {medicine.stock_quantity}
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive">Out of Stock</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="link"
+                      className="text-blue-600 hover:text-blue-700 p-0 h-auto font-normal"
+                    >
+                      View Full Detail »
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
           <div className="px-6 py-4 border-t flex items-center justify-between">
             <div className="text-sm text-gray-600">
               Showing {startIndex + 1} -{" "}
-              {Math.min(endIndex, filteredByGroup.length)} results of{" "}
-              {filteredByGroup.length}
+              {Math.min(endIndex, fullyFilteredMedicines.length)} results of{" "}
+              {fullyFilteredMedicines.length}
             </div>
             <div className="flex items-center gap-2">
               <Button
