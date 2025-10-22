@@ -129,28 +129,28 @@ export function useMedicines(pharmacyId?: string) {
     if (!isReady || !powerSyncDb) return;
 
     console.log("🔍 Setting up PowerSync watch for medicines...");
-
     let aborted = false;
 
     const setupWatch = async () => {
       // Initial fetch with loading state
       await fetchMedicines(true);
 
-      // Watch for changes to medicines and pharmacy_medicines tables
-      const watchQuery = pharmacyId
-        ? `SELECT m.*, pm.* FROM medicines m 
-           INNER JOIN pharmacy_medicines pm ON m.id = pm.medicine_id 
-           WHERE pm.pharmacy_id = ?`
-        : `SELECT * FROM medicines`;
+      // Build Kysely query
+      const query = pharmacyId
+        ? db
+            .selectFrom("pharmacy_medicines as pm")
+            .innerJoin("medicines as m", "m.id", "pm.medicine_id")
+            .selectAll(["m", "pm"])
+            .where("pm.pharmacy_id", "=", pharmacyId)
+        : db.selectFrom("medicines").selectAll();
 
-      const watchParams = pharmacyId ? [pharmacyId] : [];
+      // Compile to SQL
+      const { sql, parameters } = query.compile();
 
-      // Use async iteration pattern for watching
       try {
-        for await (const result of powerSyncDb.watch(watchQuery, watchParams)) {
+        for await (const result of powerSyncDb.watch(sql, parameters)) {
           if (aborted) break;
           console.log("🔄 Database change detected");
-          // Don't show loading on updates - just refresh data silently
           await fetchMedicines(false);
         }
       } catch (error) {
@@ -162,12 +162,11 @@ export function useMedicines(pharmacyId?: string) {
 
     setupWatch();
 
-    // Cleanup watcher on unmount
     return () => {
       console.log("🛑 Cleaning up PowerSync watch");
       aborted = true;
     };
-  }, [isReady, powerSyncDb, pharmacyId, fetchMedicines]);
+  }, [isReady, powerSyncDb, pharmacyId, fetchMedicines, db]);
 
   // Fetch batches for a specific medicine
   const fetchBatchesForMedicine = useCallback(

@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { MoveDown, MoveUp, RefreshCcw, Wifi, WifiOff } from "lucide-react";
-import { useStatus } from "@powersync/react";
 import {
   usePowerSync,
   usePowerSyncStatus,
 } from "@/lib/powersync/PowersyncProvider";
 
 export default function ConnectionStatus() {
-  const status = useStatus();
-
-  const { connect, disconnect, reconnect, isConnecting, isConnected } = usePowerSync();
+  const { connect, disconnect, reconnect, isConnecting, isConnected, powerSyncDb } = usePowerSync();
   const { syncStatus } = usePowerSyncStatus();
+  
+  // Safely get status from PowerSync
+  const status = powerSyncDb?.currentStatus;
 
   const refreshConnection = async () => {
     console.log('🔄 Refreshing connection...', syncStatus);
