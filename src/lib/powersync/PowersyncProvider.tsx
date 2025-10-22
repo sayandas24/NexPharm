@@ -50,6 +50,12 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
 
   // Initialize PowerSync
   useEffect(() => {
+    // Skip if not in browser
+    if (typeof window === 'undefined') {
+      console.warn('⚠️ PowerSync skipped - not in browser environment');
+      return;
+    }
+
     let mounted = true;
 
     const initializePowerSync = async () => {

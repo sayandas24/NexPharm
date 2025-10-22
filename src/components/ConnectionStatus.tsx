@@ -42,7 +42,7 @@ export default function ConnectionStatus() {
   };
 
   return (
-    <div className="w-10 absolute   top-0 flex items-center gap-2 text-sm ">
+    <div className="w-10 absolute m-2  bottom-0 flex items-center gap-2 text-sm ">
       <div className="flex bg-zinc-700 rounded-lg p-3 items-center ">
         <div className="flex">
           <MoveUp color={status?.dataFlowStatus.uploading ? "blue" : "green"} />

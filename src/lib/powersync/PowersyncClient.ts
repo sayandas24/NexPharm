@@ -9,12 +9,18 @@ import { PharmacyDatabase } from "@/types/database-types";
 export class PowerSyncClient {
   private static instance: PowerSyncClient | null = null;
 
-  public powerSyncDb: PowerSyncDatabase;
-  public db: Kysely<PharmacyDatabase>;
-  public supabaseConnector: SupabaseConnector;
+  public powerSyncDb!: PowerSyncDatabase;
+  public db!: Kysely<PharmacyDatabase>;
+  public supabaseConnector!: SupabaseConnector;
   private isInitialized: boolean = false;
 
   private constructor() {
+    // Only initialize if we're in the browser
+    if (typeof window === 'undefined') {
+      console.warn("⚠️ PowerSync cannot be initialized on the server");
+      return;
+    }
+
     console.log("🔧 Creating PowerSync instance...");
 
     // Initialize PowerSync database
@@ -26,7 +32,6 @@ export class PowerSyncClient {
       schema: AppSchema,
       flags: {
         enableMultiTabs: true,
-        disableSSRWarning: true,
       },
     });
 
@@ -40,6 +45,12 @@ export class PowerSyncClient {
   }
 
   public static getInstance(): PowerSyncClient {
+    // Only create instance in browser
+    if (typeof window === 'undefined') {
+      // Return a dummy instance for SSR
+      return {} as PowerSyncClient;
+    }
+
     if (!PowerSyncClient.instance) {
       PowerSyncClient.instance = new PowerSyncClient();
     }
@@ -47,8 +58,19 @@ export class PowerSyncClient {
   }
 
   async init(): Promise<void> {
+    // Skip initialization on server
+    if (typeof window === 'undefined') {
+      console.warn("⚠️ Skipping PowerSync init on server");
+      return;
+    }
+
     if (this.isInitialized) {
       console.log("✅ PowerSync already initialized");
+      return;
+    }
+
+    if (!this.powerSyncDb) {
+      console.error("❌ PowerSync database not initialized");
       return;
     }
 
@@ -91,8 +113,22 @@ export class PowerSyncClient {
   }
 }
 
-// Export singleton instance
-export const powerSyncClient = PowerSyncClient.getInstance();
+// Export singleton instance getter (lazy-loaded)
+let _powerSyncClient: PowerSyncClient | null = null;
 
-// Export Kysely db for direct use
-export const db = powerSyncClient.db;
+export const getPowerSyncClient = (): PowerSyncClient => {
+  if (!_powerSyncClient) {
+    _powerSyncClient = PowerSyncClient.getInstance();
+  }
+  return _powerSyncClient;
+};
+
+// For backward compatibility
+export const powerSyncClient = typeof window !== 'undefined' 
+  ? PowerSyncClient.getInstance() 
+  : {} as PowerSyncClient;
+
+// Export Kysely db for direct use (only in browser)
+export const db = typeof window !== 'undefined' 
+  ? powerSyncClient.db 
+  : {} as Kysely<PharmacyDatabase>;

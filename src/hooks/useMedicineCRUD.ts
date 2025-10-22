@@ -1,11 +1,10 @@
+// hooks/useMedicineCRUD.ts
 import React, { useCallback, useState } from "react";
-
 import {
   useKyselyDB,
   usePowerSync,
   usePowerSyncStatus,
 } from "@/lib/powersync/PowersyncProvider";
-import { useMedicines } from "./useMedicines";
 import { MedicinesTable, PharmacyMedicineTable } from "@/types/database-types";
 import { pickTableColumns } from "@/utils/filterTableData";
 import { v4 as uuidv4 } from "uuid";
@@ -60,19 +59,18 @@ export default function useMedicineCRUD() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isReady, powerSyncDb, supabaseConnector } = usePowerSync();
-  const { fetchMedicines } = useMedicines();
 
   const db = useKyselyDB();
   const { isConnected, syncStatus } = usePowerSyncStatus();
 
-  // mark Add medicine to pharmacy_medicines (junction table)
+  // Add medicine to pharmacy_medicines (junction table)
   const addMedicineToPharmacy = useCallback(
     async (medicineData: PharmacyMedicineTable) => {
       if (!isReady) return;
 
       try {
         console.log(
-          "📝 Medicine medicineData response medicine to pharmacy:",
+          "📝 Adding medicine to pharmacy:",
           medicineData
         );
         const response = await db
@@ -80,16 +78,15 @@ export default function useMedicineCRUD() {
           .values(medicineData)
           .execute();
 
-        console.log("✅ Pharmacy medicine inserting response:", response);
-
-        // Refresh medicines list after adding
-        await fetchMedicines();
+        console.log("✅ Pharmacy medicine inserted:", response);
+        
+        // ✅ No need to call fetchMedicines - useQuery will auto-update!
       } catch (error) {
         console.error("Error adding medicine to pharmacy:", error);
         throw error;
       }
     },
-    [db, isReady, fetchMedicines]
+    [db, isReady]
   );
 
   // Create new medicine in master catalog
@@ -97,17 +94,16 @@ export default function useMedicineCRUD() {
     async (
       medicineData: Omit<MedicinesTable, "id" | "created_at" | "updated_at">
     ) => {
-      // Pre-insert validation
       if (!isReady) {
         throw new Error("PowerSync is not ready. Please wait and try again.");
       }
 
-      // Ensure required fields are present
       if (!medicineData.name) {
         throw new Error("Medicine name is required");
       }
 
       try {
+        setLoading(true);
         console.log("📝 Creating medicine:", medicineData.name);
 
         const filteredMedicineData = pickTableColumns<MedicinesTable>(
@@ -129,7 +125,8 @@ export default function useMedicineCRUD() {
           .values(finalValue)
           .execute();
 
-        console.log("✅ Medicine medicineData response:", medicineData);
+        console.log("✅ Medicine created:", response);
+        
         if (response) {
           const filteredPharmacyMedicineData =
             pickTableColumns<PharmacyMedicineTable>(
@@ -144,13 +141,11 @@ export default function useMedicineCRUD() {
           await addMedicineToPharmacy(filteredPharmacyMedicineData as any);
         }
 
-        // Return immediately without waiting for upload
-        await fetchMedicines();
+        // ✅ No need to call fetchMedicines - useQuery will auto-update!
         return finalValue.id;
       } catch (error: any) {
         console.error("❌ Error creating medicine:", error);
 
-        // Provide more specific error messages
         if (error.message?.includes("UNIQUE constraint")) {
           throw new Error("A medicine with this ID or barcode already exists");
         } else if (error.message?.includes("NOT NULL constraint")) {
@@ -162,9 +157,11 @@ export default function useMedicineCRUD() {
         } else {
           throw new Error(`Failed to create medicine: ${error.message}`);
         }
+      } finally {
+        setLoading(false);
       }
     },
-    [db, isReady, powerSyncDb, supabaseConnector]
+    [db, isReady, addMedicineToPharmacy]
   );
 
   const updateMedicineStock = useCallback(
@@ -182,13 +179,13 @@ export default function useMedicineCRUD() {
           .where("pharmacy_id", "=", pharmacyId)
           .execute();
 
-        await fetchMedicines();
+        // ✅ No need to call fetchMedicines - useQuery will auto-update!
       } catch (error) {
         console.error("Error updating stock:", error);
         throw error;
       }
     },
-    [db, isReady, fetchMedicines]
+    [db, isReady]
   );
 
   return {
