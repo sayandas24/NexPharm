@@ -1,5 +1,5 @@
 // lib/powersync/provider.tsx
-'use client';
+"use client";
 
 import React, {
   createContext,
@@ -8,13 +8,13 @@ import React, {
   useState,
   useCallback,
   PropsWithChildren,
-} from 'react';
-import { PowerSyncDatabase } from '@powersync/web';
-import { PowerSyncContext } from '@powersync/react';
-import { Kysely } from 'kysely';
-import { powerSyncClient } from './PowersyncClient';
-import { SupabaseConnector } from './SupabaseConnector';
-import { PharmacyDatabase } from '@/types/database-types';
+} from "react";
+import { PowerSyncDatabase } from "@powersync/web";
+import { PowerSyncContext } from "@powersync/react";
+import { Kysely } from "kysely";
+import { powerSyncClient } from "./PowersyncClient";
+import { SupabaseConnector } from "./SupabaseConnector";
+import { PharmacyDatabase } from "@/types/database-types";
 
 // ============ Context Types ============
 interface PowerSyncContextType {
@@ -26,6 +26,8 @@ interface PowerSyncContextType {
   isConnecting: boolean;
   error: Error | null;
   syncStatus: SyncStatus;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
   reconnect: () => Promise<void>;
 }
 
@@ -35,7 +37,9 @@ interface SyncStatus {
 }
 
 // ============ Create Context ============
-const PowerSyncProviderContext = createContext<PowerSyncContextType | null>(null);
+const PowerSyncProviderContext = createContext<PowerSyncContextType | null>(
+  null
+);
 
 // ============ Provider Component ============
 export function PowerSyncProvider({ children }: PropsWithChildren) {
@@ -51,28 +55,58 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
   // Initialize PowerSync
   useEffect(() => {
     // Skip if not in browser
-    if (typeof window === 'undefined') {
-      console.warn('⚠️ PowerSync skipped - not in browser environment');
+    if (typeof window === "undefined") {
+      console.warn("⚠️ PowerSync skipped - not in browser environment");
       return;
     }
 
     let mounted = true;
+    let statusListener: any = null;
 
     const initializePowerSync = async () => {
       try {
-        console.log('🚀 Starting PowerSync initialization...');
+        console.log("🚀 Starting PowerSync initialization...");
         setIsConnecting(true);
-        
-        await powerSyncClient.init(); 
-        
+
+        await powerSyncClient.init();
+
+        if (!mounted) return;
+
+        // Register status listener to track connection state
+        statusListener = powerSyncClient.powerSyncDb.registerListener({
+          initialized: () => {
+            console.log("📱 PowerSync database initialized");
+          },
+          statusChanged: (status) => {
+            if (!mounted) return;
+
+            console.log("🔄 Status changed:", {
+              connected: status.connected,
+              dataFlowStatus: status.dataFlowStatus,
+            });
+
+            setIsConnected(status.connected);
+            setIsConnecting(false); // Stop showing connecting state once we get a status
+            setSyncStatus({
+              connected: status.connected,
+              lastSyncedAt: status.lastSyncedAt
+                ? new Date(status.lastSyncedAt)
+                : null,
+            });
+
+            // Clear error if connected successfully
+            if (status.connected) {
+              setError(null);
+            }
+          },
+        });
+
         if (mounted) {
           setIsReady(true);
-          setIsConnecting(false);
-          console.log('✅ PowerSync ready for use');
+          console.log("✅ PowerSync ready for use");
         }
-
       } catch (err) {
-        console.error('❌ PowerSync initialization error:', err);
+        console.error("❌ PowerSync initialization error:", err);
         if (mounted) {
           setError(err as Error);
           setIsConnecting(false);
@@ -84,23 +118,98 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
 
     // Cleanup
     return () => {
-      mounted = false; 
+      mounted = false;
+      if (statusListener) {
+        console.log("🧹 Cleaning up PowerSync status listener");
+        // Note: PowerSync doesn't have an unregister method, listener will be cleaned up on disconnect
+      }
     };
   }, []);
 
-  // Reconnect function
-  const reconnect = useCallback(async () => {
+  // Connect function
+  const connect = useCallback(async () => {
+    if (!powerSyncClient.powerSyncDb) {
+      console.error("❌ PowerSync database not initialized");
+      return;
+    }
+
     try {
-      console.log('🔄 Attempting to reconnect PowerSync...');
+      console.log("🔗 Connecting to PowerSync...");
       setIsConnecting(true);
       setError(null);
-      
-      await powerSyncClient.powerSyncDb.connect(powerSyncClient.supabaseConnector);
-      
-      setIsConnecting(false);
-      console.log('✅ Reconnected successfully');
+
+      await powerSyncClient.powerSyncDb.connect(
+        powerSyncClient.supabaseConnector
+      );
+
+      console.log("✅ Connect initiated - waiting for status update");
+
+      // Fallback timeout in case status listener doesn't fire
+      setTimeout(() => {
+        setIsConnecting(false);
+      }, 10000); // 10 second timeout
+
+      // Note: isConnecting will be set to false by the statusChanged listener
     } catch (err) {
-      console.error('❌ Reconnection failed:', err);
+      console.error("❌ Connection failed:", err);
+      setError(err as Error);
+      setIsConnecting(false);
+    }
+  }, []);
+
+  // Disconnect function
+  const disconnect = useCallback(async () => {
+    if (!powerSyncClient.powerSyncDb) {
+      console.error("❌ PowerSync database not initialized");
+      return;
+    }
+
+    try {
+      console.log("🔌 Disconnecting from PowerSync...");
+      setIsConnecting(true);
+
+      await powerSyncClient.powerSyncDb.disconnect();
+
+      console.log("✅ Disconnected successfully");
+      setIsConnecting(false);
+      setIsConnected(false);
+    } catch (err) {
+      console.error("❌ Disconnection failed:", err);
+      setError(err as Error);
+      setIsConnecting(false);
+    }
+  }, []);
+
+  // Reconnect function (disconnect then connect)
+  const reconnect = useCallback(async () => {
+    if (!powerSyncClient.powerSyncDb) {
+      console.error("❌ PowerSync database not initialized");
+      return;
+    }
+
+    try {
+      console.log("🔄 Attempting to reconnect PowerSync...");
+      setIsConnecting(true);
+      setError(null);
+
+      // Disconnect first if already connected
+      if (powerSyncClient.powerSyncDb.connected) {
+        console.log("🔌 Disconnecting existing connection...");
+        await powerSyncClient.powerSyncDb.disconnect();
+        // Wait a bit for clean disconnect
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
+      // Now reconnect
+      console.log("🔗 Connecting to PowerSync...");
+      await powerSyncClient.powerSyncDb.connect(
+        powerSyncClient.supabaseConnector
+      );
+
+      console.log("✅ Reconnect initiated - waiting for status update");
+      // Note: isConnecting will be set to false by the statusChanged listener
+    } catch (err) {
+      console.error("❌ Reconnection failed:", err);
       setError(err as Error);
       setIsConnecting(false);
     }
@@ -116,6 +225,8 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
     isConnecting,
     error,
     syncStatus,
+    connect,
+    disconnect,
     reconnect,
   };
 
@@ -138,7 +249,7 @@ export function usePowerSync() {
   const context = useContext(PowerSyncProviderContext);
 
   if (!context) {
-    throw new Error('usePowerSync must be used within PowerSyncProvider');
+    throw new Error("usePowerSync must be used within PowerSyncProvider");
   }
 
   return context;
@@ -164,8 +275,9 @@ export function useSupabaseConnector() {
  * Hook to check if PowerSync is ready and connected
  */
 export function usePowerSyncStatus() {
-  const { isReady, isConnected, isConnecting, error, syncStatus } = usePowerSync();
-  
+  const { isReady, isConnected, isConnecting, error, syncStatus } =
+    usePowerSync();
+
   return {
     isReady,
     isConnected,
@@ -190,10 +302,10 @@ export function useConnectionStatus(
   useEffect(() => {
     if (isConnected !== previousStatus) {
       if (isConnected && onOnline) {
-        console.log('🟢 App is now ONLINE');
+        console.log("🟢 App is now ONLINE");
         onOnline();
       } else if (!isConnected && onOffline) {
-        console.log('🔴 App is now OFFLINE');
+        console.log("🔴 App is now OFFLINE");
         onOffline();
       }
       setPreviousStatus(isConnected);

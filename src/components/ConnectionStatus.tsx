@@ -9,35 +9,13 @@ import {
 } from "@/lib/powersync/PowersyncProvider";
 
 export default function ConnectionStatus() {
-  const [isConnected, setIsConnected] = useState(false);
-
   const status = useStatus();
 
-  const { supabaseConnector, powerSyncDb, reconnect,isConnecting } = usePowerSync();
+  const { connect, disconnect, reconnect, isConnecting, isConnected } = usePowerSync();
   const { syncStatus } = usePowerSyncStatus();
 
-  useEffect(() => {
-    const checkConnection = () => {
-      setIsConnected(powerSyncDb.connected);
-    };
-
-    // Check initial connection
-    checkConnection();
-
-    // Check connection status periodically
-    const interval = setInterval(checkConnection, 2000);
-
-    return () => clearInterval(interval);
-  }, [powerSyncDb]);
-
-  console.log(isConnecting, "connecting");
-
   const refreshConnection = async () => {
-    console.log(syncStatus, "syncStatus");
-    // if (supabaseConnector) {
-    //   powerSyncDb.connect(supabaseConnector);
-    //   console.log("Refreshing connection");
-    // }
+    console.log('🔄 Refreshing connection...', syncStatus);
     await reconnect();
   };
 
@@ -45,9 +23,9 @@ export default function ConnectionStatus() {
     <div className="w-10 absolute m-2  bottom-0 flex items-center gap-2 text-sm ">
       <div className="flex bg-zinc-700 rounded-lg p-3 items-center ">
         <div className="flex">
-          <MoveUp color={status?.dataFlowStatus.uploading ? "blue" : "green"} />
+          <MoveUp color={status?.dataFlowStatus?.uploading ? "blue" : "green"} />
           <MoveDown
-            color={status?.dataFlowStatus.downloading ? "blue" : "green"}
+            color={status?.dataFlowStatus?.downloading ? "blue" : "green"}
           />
         </div>
 
@@ -75,14 +53,16 @@ export default function ConnectionStatus() {
 
         <div className="flex">
           <button
-            onClick={() => powerSyncDb.connect(supabaseConnector)}
-            className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
+            onClick={connect}
+            disabled={isConnecting || isConnected}
+            className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Connect
           </button>
           <button
-            onClick={() => powerSyncDb.disconnect()}
-            className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
+            onClick={disconnect}
+            disabled={isConnecting || !isConnected}
+            className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Disconnect
           </button>
