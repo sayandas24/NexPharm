@@ -1,10 +1,60 @@
 import React, { useCallback, useState } from "react";
 
-import { useKyselyDB, usePowerSync, usePowerSyncStatus } from "@/lib/powersync/PowersyncProvider";
+import {
+  useKyselyDB,
+  usePowerSync,
+  usePowerSyncStatus,
+} from "@/lib/powersync/PowersyncProvider";
 import { useMedicines } from "./useMedicines";
-import { MedicinesTable } from "@/types/database-types";
+import { MedicinesTable, PharmacyMedicineTable } from "@/types/database-types";
 import { pickTableColumns } from "@/utils/filterTableData";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
+
+const validMedicineTableKeys: (keyof MedicinesTable)[] = [
+  "id",
+  "name",
+  "generic_name",
+  "brand_names",
+  "manufacturer",
+  "category",
+  "strength",
+  "pack_size",
+  "how_to_use",
+  "dosage_adults",
+  "dosage_children",
+  "dosage_elderly",
+  "duration",
+  "side_effects",
+  "warnings",
+  "shelf_life",
+  "barcode",
+  "requires_prescription",
+  "medicine_image_url",
+  "medicine_images",
+  "package_image_url",
+  "unit_type",
+  "medicine_group",
+  "tags",
+  "is_active",
+  "is_otc",
+  "created_at",
+  "updated_at",
+];
+
+const validPharmacyMedicineTableKeys: (keyof PharmacyMedicineTable)[] = [
+  "id",
+  "medicine_id",
+  "pharmacy_id",
+  "mrp",
+  "price_range_min",
+  "price_range_max",
+  "stock_quantity",
+  "reorder_level",
+  "storage_conditions",
+  "is_available",
+  "created_at",
+  "updated_at",
+];
 
 export default function useMedicineCRUD() {
   const [loading, setLoading] = useState(false);
@@ -13,43 +63,24 @@ export default function useMedicineCRUD() {
   const { fetchMedicines } = useMedicines();
 
   const db = useKyselyDB();
-  const {isConnected, syncStatus} = usePowerSyncStatus()
+  const { isConnected, syncStatus } = usePowerSyncStatus();
 
   // mark Add medicine to pharmacy_medicines (junction table)
   const addMedicineToPharmacy = useCallback(
-    async (
-      medicineId: string,
-      pharmacyId: string,
-      inventoryData: {
-        mrp: number;
-        price_range_min: number;
-        price_range_max: number;
-        stock_quantity: number;
-        reorder_level: number;
-        storage_conditions?: string;
-      }
-    ) => {
+    async (medicineData: PharmacyMedicineTable) => {
       if (!isReady) return;
 
       try {
-        await db
+        console.log(
+          "📝 Medicine medicineData response medicine to pharmacy:",
+          medicineData
+        );
+        const response = await db
           .insertInto("pharmacy_medicines")
-          // fix generate uuid not from crypto
-          .values({
-            id: uuidv4(),
-            medicine_id: medicineId,
-            pharmacy_id: pharmacyId,
-            mrp: inventoryData.mrp || 50,
-            price_range_min: inventoryData.price_range_min || 10,
-            price_range_max: inventoryData.price_range_max || 10,
-            stock_quantity: inventoryData.stock_quantity || 10,
-            reorder_level: inventoryData.reorder_level || 10,
-            storage_conditions: inventoryData.storage_conditions || null,
-            is_available: 1,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
+          .values(medicineData)
           .execute();
+
+        console.log("✅ Pharmacy medicine inserting response:", response);
 
         // Refresh medicines list after adding
         await fetchMedicines();
@@ -79,44 +110,13 @@ export default function useMedicineCRUD() {
       try {
         console.log("📝 Creating medicine:", medicineData.name);
 
-        const validKeys: (keyof MedicinesTable)[] = [
-          "id",
-          "name",
-          "generic_name",
-          "brand_names",
-          "manufacturer",
-          "category",
-          "strength",
-          "pack_size",
-          "how_to_use",
-          "dosage_adults",
-          "dosage_children",
-          "dosage_elderly",
-          "duration",
-          "side_effects",
-          "warnings",
-          "shelf_life",
-          "barcode",
-          "requires_prescription",
-          "medicine_image_url",
-          "medicine_images",
-          "package_image_url",
-          "unit_type",
-          "medicine_group",
-          "tags",
-          "is_active",
-          "is_otc",
-          "created_at",
-          "updated_at",
-        ];
-
-        const filteredData = pickTableColumns<MedicinesTable>(
+        const filteredMedicineData = pickTableColumns<MedicinesTable>(
           medicineData,
-          validKeys
+          validMedicineTableKeys
         );
 
         const finalValue: any = {
-          ...filteredData,
+          ...filteredMedicineData,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -124,42 +124,28 @@ export default function useMedicineCRUD() {
         console.log("💾 Inserting into local PowerSync DB:", finalValue);
 
         // Insert into PowerSync local database
-        const response = await db?.insertInto("medicines").values(finalValue).execute();
+        const response = await db
+          ?.insertInto("medicines")
+          .values(finalValue)
+          .execute();
 
-        console.log("✅ Medicine inserting response:", response);
-        console.log("📤 PowerSync will upload to Supabase when online");
+        console.log("✅ Medicine medicineData response:", medicineData);
+        if (response) {
+          const filteredPharmacyMedicineData =
+            pickTableColumns<PharmacyMedicineTable>(
+              {
+                id: uuidv4(),
+                medicine_id: medicineData?.id,
+                ...medicineData,
+              },
+              validPharmacyMedicineTableKeys
+            );
 
-        // Trigger immediate upload if online (non-blocking)
-        // if (powerSyncDb.connected) {
-        //   console.log("🌐 Device is online, triggering immediate upload...");
-
-        //   // Trigger upload in the background without blocking the return
-        //   // This allows the UI to update immediately while upload happens
-        //   supabaseConnector
-        //     .uploadData(powerSyncDb)
-        //     .then(() => {
-        //       console.log("✅ Upload completed successfully");
-        //       const status = powerSyncDb.currentStatus;
-        //       console.log("📊 Sync status after upload:", {
-        //         connected: status?.connected,
-        //         hasSynced: status?.hasSynced,
-        //       });
-        //     })
-        //     .catch((uploadError: any) => {
-        //       // Log the error but don't throw - PowerSync will retry automatically
-        //       console.warn(
-        //         "⚠️ Manual upload failed, will retry automatically:",
-        //         uploadError.message
-        //       );
-        //     });
-        // } else {
-        //   console.log(
-        //     "📴 Device is offline, will sync when connection restored"
-        //   );
-        // }
+          await addMedicineToPharmacy(filteredPharmacyMedicineData as any);
+        }
 
         // Return immediately without waiting for upload
-        await fetchMedicines()
+        await fetchMedicines();
         return finalValue.id;
       } catch (error: any) {
         console.error("❌ Error creating medicine:", error);

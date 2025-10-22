@@ -81,7 +81,7 @@ export default function ConnectionStatus() {
             Connect
           </button>
           <button
-            onClick={() => powerSyncDb.disconnectAndClear()}
+            onClick={() => powerSyncDb.disconnect()}
             className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
           >
             Disconnect

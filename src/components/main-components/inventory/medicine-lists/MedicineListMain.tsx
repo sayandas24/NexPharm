@@ -206,7 +206,7 @@ export default function MedicineListMain() {
                     Fill in the details to add a new medicine to your inventory
                   </SheetDescription>
                 </SheetHeader>
-                <AddMedicineForm onSuccess={handleMedicineAdded} />
+                <AddMedicineForm onSuccess={handleMedicineAdded} pharmacy={currentPharmacy} />
               </SheetContent>
             </Sheet>
           </div>

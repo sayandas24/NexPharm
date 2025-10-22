@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import useMedicineCRUD from '@/hooks/useMedicineCRUD';
-import { MedicinesTable } from '@/types/database-types';
+import { MedicinesTable, PharmacyTable } from '@/types/database-types';
 import { v4 as uuidv4 } from 'uuid';
 
 const medicineSchema = Yup.object().shape({
@@ -60,9 +60,10 @@ const medicineSchema = Yup.object().shape({
 
 interface AddMedicineFormProps {
   onSuccess?: () => void;
+  pharmacy?: PharmacyTable;
 }
 
-export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
+export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
   
   const { createMedicine ,error,loading} = useMedicineCRUD()
 
@@ -70,7 +71,7 @@ export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
     try {
       const res = await createMedicine({
         id: uuidv4(),
-        pharmacy_id: '550e8400-e29b-41d4-a716-446655440002',
+        pharmacy_id: pharmacy?.id,
         ...values
       });
       console.log(res, "Medicine adding response")
