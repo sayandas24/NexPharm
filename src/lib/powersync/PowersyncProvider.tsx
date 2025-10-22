@@ -23,6 +23,7 @@ interface PowerSyncContextType {
   supabaseConnector: SupabaseConnector;
   isReady: boolean;
   isConnected: boolean;
+  isConnecting: boolean;
   error: Error | null;
   syncStatus: SyncStatus;
   reconnect: () => Promise<void>;
@@ -40,6 +41,7 @@ const PowerSyncProviderContext = createContext<PowerSyncContextType | null>(null
 export function PowerSyncProvider({ children }: PropsWithChildren) {
   const [isReady, setIsReady] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     connected: false,
@@ -49,39 +51,25 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
   // Initialize PowerSync
   useEffect(() => {
     let mounted = true;
-    let statusListener: any = null;
 
     const initializePowerSync = async () => {
       try {
         console.log('🚀 Starting PowerSync initialization...');
+        setIsConnecting(true);
         
-        await powerSyncClient.init();
+        await powerSyncClient.init(); 
+        
+        if (mounted) {
+          setIsReady(true);
+          setIsConnecting(false);
+          console.log('✅ PowerSync ready for use');
+        }
 
-        if (!mounted) return;
-
-        // Register status listener
-        statusListener = powerSyncClient.powerSyncDb.registerListener({
-          initialized: () => {
-            console.log('📱 PowerSync database initialized');
-          },
-          statusChanged: (status) => {
-            if (!mounted) return;
- 
-
-            setIsConnected(status.connected);
-            setSyncStatus({
-              connected: status.connected,
-              lastSyncedAt: status.lastSyncedAt ? new Date(status.lastSyncedAt) : null,
-            });
-          },
-        });
-
-        setIsReady(true);
-        console.log('✅ PowerSync fully initialized and ready');
       } catch (err) {
         console.error('❌ PowerSync initialization error:', err);
         if (mounted) {
           setError(err as Error);
+          setIsConnecting(false);
         }
       }
     };
@@ -90,11 +78,7 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
 
     // Cleanup
     return () => {
-      mounted = false;
-      if (statusListener) {
-        // Remove listener if possible
-        console.log('🧹 Cleaning up PowerSync listeners');
-      }
+      mounted = false; 
     };
   }, []);
 
@@ -102,11 +86,17 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
   const reconnect = useCallback(async () => {
     try {
       console.log('🔄 Attempting to reconnect PowerSync...');
+      setIsConnecting(true);
+      setError(null);
+      
       await powerSyncClient.powerSyncDb.connect(powerSyncClient.supabaseConnector);
+      
+      setIsConnecting(false);
       console.log('✅ Reconnected successfully');
     } catch (err) {
       console.error('❌ Reconnection failed:', err);
       setError(err as Error);
+      setIsConnecting(false);
     }
   }, []);
 
@@ -117,6 +107,7 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
     supabaseConnector: powerSyncClient.supabaseConnector,
     isReady,
     isConnected,
+    isConnecting,
     error,
     syncStatus,
     reconnect,
@@ -167,11 +158,12 @@ export function useSupabaseConnector() {
  * Hook to check if PowerSync is ready and connected
  */
 export function usePowerSyncStatus() {
-  const { isReady, isConnected, error, syncStatus } = usePowerSync();
+  const { isReady, isConnected, isConnecting, error, syncStatus } = usePowerSync();
   
   return {
     isReady,
     isConnected,
+    isConnecting,
     isOnline: isConnected,
     isOffline: !isConnected,
     error,
