@@ -50,18 +50,8 @@ export default function HomePage() {
   const addMedicines = async () => {
     try {
       // Query SQLite master table to see all tables
-      const tables = await db
-        .insertInto("medicines")
-        .values({
-          id: uuidv4(),
-          name: "Test46e",
-          generic_name: "Acetaminophen",
-          strength: "500mg",
-          manufacturer: "Johnson & Johnson", 
-        })
-        .execute();
+      
 
-      console.log("Adding medicine:", tables);
     } catch (error) {
       console.error("Error checking tables:", error);
     }
