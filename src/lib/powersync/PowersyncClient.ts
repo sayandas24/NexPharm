@@ -63,7 +63,7 @@ export class PowerSyncClient {
       this.powerSyncDb.registerListener({
         initialized: () => console.log('📱 Database initialized'),
         statusChanged: (status) => {
-          console.log('🔄 Sync status:', status.connected ? 'Online' : 'Offline');
+          console.log('🔄 Sync status:', status.dataFlowStatus);
         },
       });
     } catch (error) {

@@ -4,6 +4,7 @@ import { useKyselyDB, usePowerSync, usePowerSyncStatus } from "@/lib/powersync/P
 import { useMedicines } from "./useMedicines";
 import { MedicinesTable } from "@/types/database-types";
 import { pickTableColumns } from "@/utils/filterTableData";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function useMedicineCRUD() {
   const [loading, setLoading] = useState(false);
@@ -35,14 +36,14 @@ export default function useMedicineCRUD() {
           .insertInto("pharmacy_medicines")
           // fix generate uuid not from crypto
           .values({
-            id: crypto.randomUUID(),
+            id: uuidv4(),
             medicine_id: medicineId,
             pharmacy_id: pharmacyId,
-            mrp: inventoryData.mrp,
-            price_range_min: inventoryData.price_range_min,
-            price_range_max: inventoryData.price_range_max,
-            stock_quantity: inventoryData.stock_quantity,
-            reorder_level: inventoryData.reorder_level,
+            mrp: inventoryData.mrp || 50,
+            price_range_min: inventoryData.price_range_min || 10,
+            price_range_max: inventoryData.price_range_max || 10,
+            stock_quantity: inventoryData.stock_quantity || 10,
+            reorder_level: inventoryData.reorder_level || 10,
             storage_conditions: inventoryData.storage_conditions || null,
             is_available: 1,
             created_at: new Date().toISOString(),
@@ -123,39 +124,39 @@ export default function useMedicineCRUD() {
         console.log("💾 Inserting into local PowerSync DB:", finalValue);
 
         // Insert into PowerSync local database
-        await db.insertInto("medicines").values(finalValue).execute();
+        const response = await db?.insertInto("medicines").values(finalValue).execute();
 
-        console.log("✅ Medicine inserted into local DB");
+        console.log("✅ Medicine inserting response:", response);
         console.log("📤 PowerSync will upload to Supabase when online");
 
         // Trigger immediate upload if online (non-blocking)
-        if (powerSyncDb.connected) {
-          console.log("🌐 Device is online, triggering immediate upload...");
+        // if (powerSyncDb.connected) {
+        //   console.log("🌐 Device is online, triggering immediate upload...");
 
-          // Trigger upload in the background without blocking the return
-          // This allows the UI to update immediately while upload happens
-          supabaseConnector
-            .uploadData(powerSyncDb)
-            .then(() => {
-              console.log("✅ Upload completed successfully");
-              const status = powerSyncDb.currentStatus;
-              console.log("📊 Sync status after upload:", {
-                connected: status?.connected,
-                hasSynced: status?.hasSynced,
-              });
-            })
-            .catch((uploadError: any) => {
-              // Log the error but don't throw - PowerSync will retry automatically
-              console.warn(
-                "⚠️ Manual upload failed, will retry automatically:",
-                uploadError.message
-              );
-            });
-        } else {
-          console.log(
-            "📴 Device is offline, will sync when connection restored"
-          );
-        }
+        //   // Trigger upload in the background without blocking the return
+        //   // This allows the UI to update immediately while upload happens
+        //   supabaseConnector
+        //     .uploadData(powerSyncDb)
+        //     .then(() => {
+        //       console.log("✅ Upload completed successfully");
+        //       const status = powerSyncDb.currentStatus;
+        //       console.log("📊 Sync status after upload:", {
+        //         connected: status?.connected,
+        //         hasSynced: status?.hasSynced,
+        //       });
+        //     })
+        //     .catch((uploadError: any) => {
+        //       // Log the error but don't throw - PowerSync will retry automatically
+        //       console.warn(
+        //         "⚠️ Manual upload failed, will retry automatically:",
+        //         uploadError.message
+        //       );
+        //     });
+        // } else {
+        //   console.log(
+        //     "📴 Device is offline, will sync when connection restored"
+        //   );
+        // }
 
         // Return immediately without waiting for upload
         await fetchMedicines()

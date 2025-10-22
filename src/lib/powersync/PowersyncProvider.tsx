@@ -30,8 +30,6 @@ interface PowerSyncContextType {
 
 interface SyncStatus {
   connected: boolean;
-  downloading: boolean;
-  uploading: boolean;
   lastSyncedAt: Date | null;
 }
 
@@ -45,8 +43,6 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState<Error | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     connected: false,
-    downloading: false,
-    uploading: false,
     lastSyncedAt: null,
   });
 
@@ -70,18 +66,11 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
           },
           statusChanged: (status) => {
             if (!mounted) return;
-
-            console.log('🔄 Sync status changed:', {
-              connected: status.connected,
-              downloading: status.downloading,
-              uploading: status.uploading,
-            });
+ 
 
             setIsConnected(status.connected);
             setSyncStatus({
               connected: status.connected,
-              downloading: status.downloading,
-              uploading: status.uploading,
               lastSyncedAt: status.lastSyncedAt ? new Date(status.lastSyncedAt) : null,
             });
           },
@@ -136,7 +125,7 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
   return (
     <PowerSyncProviderContext.Provider value={value}>
       {/* PowerSyncContext from @powersync/react for hooks support */}
-      <PowerSyncContext.Provider value={powerSyncClient.powerSyncDb}>
+      <PowerSyncContext.Provider value={powerSyncClient.powerSyncDb as any}>
         {children}
       </PowerSyncContext.Provider>
     </PowerSyncProviderContext.Provider>

@@ -70,10 +70,11 @@ export function AddMedicineForm({ onSuccess }: AddMedicineFormProps) {
     try {
       const res = await createMedicine({
         id: uuidv4(),
+        pharmacy_id: '550e8400-e29b-41d4-a716-446655440002',
         ...values
       });
       console.log(res, "Medicine adding response")
-      toast.success('Medicine added successfully!');
+      // toast.success('Medicine added successfully!');
       resetForm();
       onSuccess?.();
     } catch (error) {
