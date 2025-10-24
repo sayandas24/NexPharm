@@ -40,6 +40,7 @@ import {
 import toast from "react-hot-toast";
 import { AddMedicineForm } from "./AddMedicineForm";
 import useAuth from "@/hooks/use-auth";
+import Link from "next/link";
 
 export default function MedicineListMain() {
   const { currentPharmacy } = useAuth();
@@ -206,7 +207,10 @@ export default function MedicineListMain() {
                     Fill in the details to add a new medicine to your inventory
                   </SheetDescription>
                 </SheetHeader>
-                <AddMedicineForm onSuccess={handleMedicineAdded} pharmacy={currentPharmacy} />
+                <AddMedicineForm
+                  onSuccess={handleMedicineAdded}
+                  pharmacy={currentPharmacy}
+                />
               </SheetContent>
             </Sheet>
           </div>
@@ -240,9 +244,7 @@ export default function MedicineListMain() {
             <TableBody>
               {paginatedMedicines.map((medicine) => (
                 <TableRow key={medicine.id}>
-                  <TableCell className="font-medium">
-                    {medicine.name}
-                  </TableCell>
+                  <TableCell className="font-medium">{medicine.name}</TableCell>
                   <TableCell className="font-mono text-sm">
                     {medicine.id.substring(0, 15)}
                   </TableCell>
@@ -253,21 +255,22 @@ export default function MedicineListMain() {
                     {medicine.medicine_group || "Generic Medicine"}
                   </TableCell>
                   <TableCell>
-                    {medicine?.stock_quantity && medicine?.stock_quantity > 0 ? (
-                      <Badge variant="outline">
-                        {medicine.stock_quantity}
-                      </Badge>
+                    {medicine?.stock_quantity &&
+                    medicine?.stock_quantity > 0 ? (
+                      <Badge variant="outline">{medicine.stock_quantity}</Badge>
                     ) : (
                       <Badge variant="destructive">Out of Stock</Badge>
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="link"
-                      className="text-blue-600 hover:text-blue-700 p-0 h-auto font-normal"
-                    >
-                      View Full Detail »
-                    </Button>
+                    <Link href={`/inventory/med-list/${medicine.id}`}>
+                      <Button
+                        variant="link"
+                        className="text-blue-600 hover:text-blue-700 p-0 h-auto font-normal"
+                      >
+                        View Full Detail »
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))}

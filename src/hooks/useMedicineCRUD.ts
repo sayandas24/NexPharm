@@ -69,17 +69,14 @@ export default function useMedicineCRUD() {
       if (!isReady) return;
 
       try {
-        console.log(
-          "📝 Adding medicine to pharmacy:",
-          medicineData
-        );
+        console.log("📝 Adding medicine to pharmacy:", medicineData);
         const response = await db
           .insertInto("pharmacy_medicines")
           .values(medicineData)
           .execute();
 
         console.log("✅ Pharmacy medicine inserted:", response);
-        
+
         // ✅ No need to call fetchMedicines - useQuery will auto-update!
       } catch (error) {
         console.error("Error adding medicine to pharmacy:", error);
@@ -126,7 +123,7 @@ export default function useMedicineCRUD() {
           .execute();
 
         console.log("✅ Medicine created:", response);
-        
+
         if (response) {
           const filteredPharmacyMedicineData =
             pickTableColumns<PharmacyMedicineTable>(
@@ -164,6 +161,28 @@ export default function useMedicineCRUD() {
     [db, isReady, addMedicineToPharmacy]
   );
 
+  const deleteMedicine = useCallback(
+    async (medicineId: string) => {
+      if (!isReady) return;
+
+      try {
+        console.log("📝 Deleting medicine:", medicineId);
+        const response = await db
+          .deleteFrom("medicines")
+          .where("id", "=", medicineId)
+          .execute();
+
+        console.log("✅ Medicine deleted:", response);
+
+        // ✅ No need to call fetchMedicines - useQuery will auto-update!
+      } catch (error) {
+        console.error("Error deleting medicine:", error);
+        throw error;
+      }
+    },
+    [db, isReady]
+  );
+
   const updateMedicineStock = useCallback(
     async (medicineId: string, pharmacyId: string, newQuantity: number) => {
       if (!isReady) return;
@@ -194,5 +213,6 @@ export default function useMedicineCRUD() {
     createMedicine,
     addMedicineToPharmacy,
     updateMedicineStock,
+    deleteMedicine,
   };
 }

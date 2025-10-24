@@ -20,13 +20,56 @@ interface PharmacyMedicineWithDetails extends MedicinesTable {
   is_available: boolean;
 }
 
+const selectPharmacyMedicinesFields = [
+  "medicines.id",
+  "medicines.name",
+  "medicines.generic_name",
+  "medicines.brand_names",
+  "medicines.manufacturer",
+  "medicines.category",
+  "medicines.strength",
+  "medicines.pack_size",
+  "medicines.how_to_use",
+  "medicines.dosage_adults",
+  "medicines.dosage_children",
+  "medicines.dosage_elderly",
+  "medicines.duration",
+  "medicines.side_effects",
+  "medicines.warnings",
+  "medicines.shelf_life",
+  "medicines.barcode",
+  "medicines.requires_prescription",
+  "medicines.medicine_image_url",
+  "medicines.medicine_images",
+  "medicines.package_image_url",
+  "medicines.unit_type",
+  "medicines.medicine_group",
+  "medicines.tags",
+  "medicines.is_active",
+  "medicines.is_otc",
+  "medicines.created_at as medicine_created_at",
+  "medicines.updated_at as medicine_updated_at",
+
+  // Pharmacy-specific fields from junction table
+  "pharmacy_medicines.id as pharmacy_medicine_id",
+  "pharmacy_medicines.pharmacy_id",
+  "pharmacy_medicines.mrp",
+  "pharmacy_medicines.price_range_min",
+  "pharmacy_medicines.price_range_max",
+  "pharmacy_medicines.stock_quantity",
+  "pharmacy_medicines.reorder_level",
+  "pharmacy_medicines.storage_conditions",
+  "pharmacy_medicines.is_available",
+  "pharmacy_medicines.created_at",
+  "pharmacy_medicines.updated_at",
+];
+
 export function useMedicines(pharmacyId?: string) {
   const db = useKyselyDB();
   const { isReady, powerSyncDb } = usePowerSync();
   const [medicines, setMedicines] = useState<
     (MedicinesTable | PharmacyMedicineWithDetails)[]
   >([]);
-  const [batches, setBatches] = useState<MedicineBatchTable[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -49,50 +92,7 @@ export function useMedicines(pharmacyId?: string) {
               "medicines.id",
               "pharmacy_medicines.medicine_id"
             )
-            .select([
-              // Medicine fields from global catalog
-              "medicines.id",
-              "medicines.name",
-              "medicines.generic_name",
-              "medicines.brand_names",
-              "medicines.manufacturer",
-              "medicines.category",
-              "medicines.strength",
-              "medicines.pack_size",
-              "medicines.how_to_use",
-              "medicines.dosage_adults",
-              "medicines.dosage_children",
-              "medicines.dosage_elderly",
-              "medicines.duration",
-              "medicines.side_effects",
-              "medicines.warnings",
-              "medicines.shelf_life",
-              "medicines.barcode",
-              "medicines.requires_prescription",
-              "medicines.medicine_image_url",
-              "medicines.medicine_images",
-              "medicines.package_image_url",
-              "medicines.unit_type",
-              "medicines.medicine_group",
-              "medicines.tags",
-              "medicines.is_active",
-              "medicines.is_otc",
-              "medicines.created_at as medicine_created_at",
-              "medicines.updated_at as medicine_updated_at",
-
-              // Pharmacy-specific fields from junction table
-              "pharmacy_medicines.id as pharmacy_medicine_id",
-              "pharmacy_medicines.pharmacy_id",
-              "pharmacy_medicines.mrp",
-              "pharmacy_medicines.price_range_min",
-              "pharmacy_medicines.price_range_max",
-              "pharmacy_medicines.stock_quantity",
-              "pharmacy_medicines.reorder_level",
-              "pharmacy_medicines.storage_conditions",
-              "pharmacy_medicines.is_available",
-              "pharmacy_medicines.created_at",
-              "pharmacy_medicines.updated_at",
-            ])
+            .select(selectPharmacyMedicinesFields as any)
             .where("pharmacy_medicines.pharmacy_id", "=", pharmacyId)
             .orderBy("medicines.name", "asc")
             .execute();
@@ -146,9 +146,11 @@ export function useMedicines(pharmacyId?: string) {
 
       // Compile to SQL
       const { sql, parameters } = query.compile();
+      // Convert readonly array to mutable array for PowerSync
+      const mutableParams = [...parameters];
 
       try {
-        for await (const result of powerSyncDb.watch(sql, parameters)) {
+        for await (const result of powerSyncDb.watch(sql, mutableParams)) {
           if (aborted) break;
           console.log("🔄 Database change detected");
           await fetchMedicines(false);
@@ -187,7 +189,7 @@ export function useMedicines(pharmacyId?: string) {
 
         const result = await query.orderBy("expiry_date", "asc").execute();
 
-        setBatches(result as MedicineBatchTable[]);
+        return result as MedicineBatchTable[] | [];
       } catch (error) {
         console.error("Error fetching batches:", error);
       }
@@ -367,15 +369,15 @@ export function useMedicines(pharmacyId?: string) {
   );
 
   // Get batch by ID
-  const getBatchById = useCallback(
-    async (batchId: string) => {
-      if (!isReady || !batchId) return undefined;
+  const getBatchByNum = useCallback(
+    async (batchNum: string) => {
+      if (!isReady || !batchNum) return undefined;
 
       try {
         const batch = await db
           .selectFrom("medicine_batches")
           .selectAll()
-          .where("id", "=", batchId)
+          .where("batch_number", "=", batchNum)
           .executeTakeFirst();
 
         return batch as MedicineBatchTable | undefined;
@@ -387,10 +389,38 @@ export function useMedicines(pharmacyId?: string) {
     [db, isReady]
   );
 
+  const getMedicineById = useCallback(
+    async (medicineId?: string) => {
+      if (!isReady || !medicineId) return undefined;
+
+      try {
+        if (medicineId) {
+          // CLIENT-SIDE JOIN: Get medicines specific to this pharmacy
+          const result = await db
+            .selectFrom("pharmacy_medicines")
+            .innerJoin(
+              "medicines",
+              "medicines.id",
+              "pharmacy_medicines.medicine_id"
+            )
+            .select(selectPharmacyMedicinesFields as any)
+            .where("pharmacy_medicines.medicine_id", "=", medicineId)
+            .orderBy("medicines.name", "asc")
+            .execute();
+
+          return result[0] as PharmacyMedicineWithDetails | any;
+        }
+      } catch (error) {
+        console.error("Error fetching medicine:", error);
+        return [];
+      }
+    },
+    [db, isReady]
+  );
+
   return {
     // State
     medicines,
-    batches,
     loading,
     isReady,
 
@@ -399,6 +429,7 @@ export function useMedicines(pharmacyId?: string) {
     fetchBatchesForMedicine,
     searchMedicine,
     searchMedicinesByName,
-    getBatchById,
+    getBatchByNum,
+    getMedicineById,
   };
 }
