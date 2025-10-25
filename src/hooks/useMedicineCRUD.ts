@@ -207,6 +207,29 @@ export default function useMedicineCRUD() {
     [db, isReady]
   );
 
+  const createMedicineBatch = useCallback(
+    async (medicineId: string, pharmacyId: string, values: any) => {
+      if (!isReady) return;
+
+      try {
+        console.log("📝 Creating batch:", medicineId, pharmacyId);
+        const response = await db
+          .insertInto("medicine_batches")
+          .values(values)
+          .execute();
+
+        console.log("✅ Batch created:", response);
+
+        // ✅ No need to call fetchMedicines - useQuery will auto-update!
+      } catch (error) {
+        console.error("Error creating batch:", error);
+        throw error;
+      }
+    },
+    [db, isReady]
+  );
+  
+
   return {
     loading,
     error,
@@ -214,5 +237,6 @@ export default function useMedicineCRUD() {
     addMedicineToPharmacy,
     updateMedicineStock,
     deleteMedicine,
+    createMedicineBatch,
   };
 }

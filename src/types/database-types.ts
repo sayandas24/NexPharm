@@ -209,3 +209,16 @@ export interface PharmacyDatabase {
   expiry_alerts: ExpiryAlertTable;
   stock_alerts: StockAlertTable;
 }
+
+export interface SuppliersTable {
+  id: string;
+  pharmacy_id: string;
+  name: string;
+  contact_person: string | null;
+  phone: string;
+  email: string | null;
+  address: string | null;
+  gst_number: string | null;
+  created_at: string;
+  updated_at: string;
+}

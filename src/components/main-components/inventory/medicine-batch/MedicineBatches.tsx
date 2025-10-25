@@ -12,10 +12,22 @@ import {
   Calendar,
   AlertCircle,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import useAuth from "@/hooks/use-auth";
 import { MedicineBatchTable, MedicinesTable } from "@/types/database-types";
+import AddBatchForm from "./AddBatchForm";
+import { Button } from "@/components/ui/button";
 
 export default function MedicineBatches() {
   const params = useParams();
@@ -24,6 +36,7 @@ export default function MedicineBatches() {
 
   const [batches, setBatches] = useState<MedicineBatchTable[] | any>([]);
   const [medicine, setMedicine] = useState<MedicinesTable[] | any>([]);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const { currentPharmacy } = useAuth();
   const { getMedicineById, fetchBatchesForMedicine, loading, isReady } =
@@ -122,15 +135,27 @@ export default function MedicineBatches() {
               List of medicines available for sales.
             </p>
           </div>
-          <button
-            onClick={() =>
-              router.push(`/inventory/med-list/${medicineId}/batches/add`)
-            }
-            className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Batch
-          </button>
+
+          {/* fix Add Batch Button */}
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button className="bg-blue-500 hover:bg-blue-600">
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Batch
+              </Button>
+            </SheetTrigger>
+            <SheetContent onInteractOutside={(e) => e.preventDefault()} className="overflow-y-auto sm:max-w-2xl">
+              <SheetHeader>
+                <SheetTitle className="text-2xl">Add New Batch</SheetTitle>
+                <SheetDescription>
+                  Add a new batch for {medicine.name}. Fill in all required
+                  fields.
+                </SheetDescription>
+              </SheetHeader>
+              {/* Form detalils */}
+              <AddBatchForm />
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
