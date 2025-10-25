@@ -207,6 +207,31 @@ export default function useMedicineCRUD() {
     [db, isReady]
   );
 
+  const updateMedicineGroup = useCallback(
+    async (medicineId: string, groupName: string) => {
+      if (!isReady) return;
+
+      try {
+        console.log("📝 Updating medicine group:", medicineId, groupName);
+        const response = await db
+          .updateTable("medicines")
+          .set({
+            medicine_group: groupName,
+          })
+          .where("id", "=", medicineId)
+          .execute();
+
+        console.log("✅ Medicine group updated:", response);
+
+        // ✅ No need to call fetchMedicines - useQuery will auto-update!
+      } catch (error) {
+        console.error("Error updating medicine group:", error);
+        throw error;
+      }
+    },
+    [db, isReady]
+  );
+
   const createMedicineBatch = useCallback(
     async (medicineId: string, pharmacyId: string, values: any) => {
       if (!isReady) return;
@@ -237,6 +262,7 @@ export default function useMedicineCRUD() {
     addMedicineToPharmacy,
     updateMedicineStock,
     deleteMedicine,
+    updateMedicineGroup,
     createMedicineBatch,
   };
 }
