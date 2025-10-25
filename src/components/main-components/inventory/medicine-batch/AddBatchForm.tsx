@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unescaped-entities */
 "use client";
 import { useMedicines } from "@/hooks/useMedicines";
 import { useParams, useRouter } from "next/navigation";
@@ -98,15 +97,15 @@ const batchValidationSchema = Yup.object({
   supplier_id: Yup.string().required("Supplier is required"),
 });
 
-export default function AddBatchForm() {
+interface AddBatchFormProps {
+  onSuccess?: () => void;
+}
+
+export default function AddBatchForm({ onSuccess }: AddBatchFormProps) {
   const params = useParams();
-  const router = useRouter();
   const medicineId = params?.medicineId as string;
   const db = useKyselyDB();
 
-  const [batches, setBatches] = useState<MedicineBatchTable[] | any>([]);
-  const [medicine, setMedicine] = useState<MedicinesTable[] | any>([]);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isCheckingBatchNumber, setIsCheckingBatchNumber] = useState(false);
   const [batchNumberError, setBatchNumberError] = useState("");
 
@@ -118,9 +117,6 @@ export default function AddBatchForm() {
     useMedicines();
   const { createMedicineBatch } = useMedicineCRUD();
 
-  console.log(suppliers, "  suppliers");
-  console.log(currentPharmacy?.id, "  currentPharmacy?.id");
-
   useEffect(() => {
     if (currentPharmacy?.id) {
       fetchSuppliers();
@@ -131,12 +127,10 @@ export default function AddBatchForm() {
     if (isReady && medicineId) {
       const fetchData = async () => {
         const medicine = await getMedicineById(medicineId);
-        setMedicine(medicine);
         const batches = await fetchBatchesForMedicine(
           medicineId,
           currentPharmacy?.id
         );
-        setBatches(batches);
       };
       fetchData();
     }
@@ -217,7 +211,6 @@ export default function AddBatchForm() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      console.log(newBatch, "  newBatch");
 
       if (currentPharmacy?.id && medicineId) {
         await createMedicineBatch(
@@ -230,19 +223,15 @@ export default function AddBatchForm() {
           "Error creating batch: Pharmacy or medicine ID is missing"
         );
       }
-      // await db.insertInto("medicine_batches").values(newBatch).execute();
-
-      // Refresh batches list
-      const updatedBatches = await fetchBatchesForMedicine(
-        medicineId,
-        currentPharmacy?.id
-      );
-      setBatches(updatedBatches);
 
       // Close sheet and reset form
-      setIsSheetOpen(false);
-      // resetForm();
+      resetForm();
       setBatchNumberError("");
+
+      // Call onSuccess callback to close the sheet
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       console.error("Error adding batch:", error);
       alert("Failed to add batch. Please try again.");
@@ -319,8 +308,18 @@ export default function AddBatchForm() {
                     {...field}
                     id="batch_number"
                     placeholder="ABC123"
+                    value={field.value?.toUpperCase() || ""}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      field.onChange(e);
+                      // Convert to uppercase before updating
+                      const upperValue = e.target.value.toUpperCase();
+                      field.onChange({
+                        ...e,
+                        target: {
+                          ...e.target,
+                          value: upperValue,
+                          name: field.name,
+                        },
+                      });
                       setBatchNumberError("");
                     }}
                     onBlur={async (e: React.FocusEvent<HTMLInputElement>) => {

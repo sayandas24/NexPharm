@@ -34,37 +34,40 @@ export default function MedicineBatches() {
   const router = useRouter();
   const medicineId = params?.medicineId as string;
 
-  const [batches, setBatches] = useState<MedicineBatchTable[] | any>([]);
   const [medicine, setMedicine] = useState<MedicinesTable[] | any>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const { currentPharmacy } = useAuth();
-  const { getMedicineById, fetchBatchesForMedicine, loading, isReady } =
-    useMedicines();
+  const {
+    getMedicineById,
+    watchBatchesForMedicine,
+    batches,
+    batchesLoading,
+    loading,
+    isReady,
+  } = useMedicines();
 
+  // Fetch medicine details
   useEffect(() => {
     if (isReady && medicineId) {
       const fetchData = async () => {
         const medicine = await getMedicineById(medicineId);
         setMedicine(medicine);
-        const batches = await fetchBatchesForMedicine(
-          medicineId,
-          currentPharmacy?.id
-        );
-        setBatches(batches);
       };
       fetchData();
     }
-  }, [
-    isReady,
-    medicineId,
-    getMedicineById,
-    fetchBatchesForMedicine,
-    currentPharmacy,
-  ]);
+  }, [isReady, medicineId, getMedicineById]);
+
+  // Watch batches for real-time updates
+  useEffect(() => {
+    if (isReady && medicineId && currentPharmacy?.id) {
+      const cleanup = watchBatchesForMedicine(medicineId, currentPharmacy.id);
+      return cleanup;
+    }
+  }, [isReady, medicineId, currentPharmacy?.id, watchBatchesForMedicine]);
 
   // Show loading state
-  if (loading || !isReady) {
+  if ((loading || batchesLoading) && !medicine) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -136,7 +139,6 @@ export default function MedicineBatches() {
             </p>
           </div>
 
-          {/* fix Add Batch Button */}
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button className="bg-blue-500 hover:bg-blue-600">
@@ -152,8 +154,8 @@ export default function MedicineBatches() {
                   fields.
                 </SheetDescription>
               </SheetHeader>
-              {/* Form detalils */}
-              <AddBatchForm />
+              {/* Form details */}
+              <AddBatchForm onSuccess={() => setIsSheetOpen(false)} />
             </SheetContent>
           </Sheet>
         </div>

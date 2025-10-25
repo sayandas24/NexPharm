@@ -72,6 +72,8 @@ export function useMedicines(pharmacyId?: string) {
   >([]);
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [batches, setBatches] = useState<MedicineBatchTable[]>([]);
+  const [batchesLoading, setBatchesLoading] = useState(false);
 
   // Fetch all medicines (without setting loading state on updates)
   const fetchMedicines = useCallback(
@@ -172,10 +174,14 @@ export function useMedicines(pharmacyId?: string) {
 
   // Fetch batches for a specific medicine
   const fetchBatchesForMedicine = useCallback(
-    async (medicineId: string, pharmacyId?: string) => {
+    async (medicineId: string, pharmacyId?: string, showLoading = false) => {
       if (!isReady || !medicineId) return;
 
       try {
+        if (showLoading) {
+          setBatchesLoading(true);
+        }
+
         let query = db
           .selectFrom("medicine_batches")
           .selectAll()
@@ -189,12 +195,69 @@ export function useMedicines(pharmacyId?: string) {
 
         const result = await query.orderBy("expiry_date", "asc").execute();
 
+        setBatches(result as MedicineBatchTable[]);
         return result as MedicineBatchTable[] | [];
       } catch (error) {
         console.error("Error fetching batches:", error);
+        return [];
+      } finally {
+        if (showLoading) {
+          setBatchesLoading(false);
+        }
       }
     },
     [db, isReady]
+  );
+
+  // Watch batches for a specific medicine
+  const watchBatchesForMedicine = useCallback(
+    (medicineId: string, pharmacyId?: string) => {
+      if (!isReady || !powerSyncDb || !medicineId) return () => {};
+
+      console.log("🔍 Setting up PowerSync watch for medicine batches...");
+      let aborted = false;
+
+      const setupWatch = async () => {
+        // Initial fetch with loading state
+        await fetchBatchesForMedicine(medicineId, pharmacyId, true);
+
+        // Build Kysely query
+        let query = db
+          .selectFrom("medicine_batches")
+          .selectAll()
+          .where("medicine_id", "=", medicineId)
+          .where("available_quantity", ">", 0);
+
+        if (pharmacyId) {
+          query = query.where("pharmacy_id", "=", pharmacyId);
+        }
+
+        // Compile to SQL
+        const { sql, parameters } = query.compile();
+        const mutableParams = [...parameters];
+
+        try {
+          for await (const result of powerSyncDb.watch(sql, mutableParams)) {
+            if (aborted) break;
+            console.log("🔄 Batch data change detected");
+            await fetchBatchesForMedicine(medicineId, pharmacyId, false);
+          }
+        } catch (error) {
+          if (!aborted) {
+            console.error("Batch watch error:", error);
+          }
+        }
+      };
+
+      setupWatch();
+
+      // Return cleanup function
+      return () => {
+        console.log("🛑 Cleaning up PowerSync batch watch");
+        aborted = true;
+      };
+    },
+    [isReady, powerSyncDb, db, fetchBatchesForMedicine]
   );
 
   // Search medicine by ID, barcode, or name
@@ -423,10 +486,13 @@ export function useMedicines(pharmacyId?: string) {
     medicines,
     loading,
     isReady,
+    batches,
+    batchesLoading,
 
     // Methods
     fetchMedicines,
     fetchBatchesForMedicine,
+    watchBatchesForMedicine,
     searchMedicine,
     searchMedicinesByName,
     getBatchByNum,
