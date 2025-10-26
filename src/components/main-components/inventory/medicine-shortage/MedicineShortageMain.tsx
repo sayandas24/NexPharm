@@ -10,6 +10,7 @@ import ShortageFilters from "./ShortageFilters";
 import ShortageTable from "./ShortageTable";
 import QuickReorderDialog, { ReorderData } from "./QuickReorderDialog";
 import { ShortageItem } from "@/hooks/useShortages";
+import Link from "next/link";
 
 export default function MedicineShortageMain() {
   const { currentPharmacy, currentUser } = useAuth();
@@ -224,7 +225,7 @@ export default function MedicineShortageMain() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center text-sm text-gray-500 mb-2">
-          <span className="font-semibold text-gray-700">Inventory</span>
+          <Link href={"/inventory"} className="font-semibold text-gray-700">Inventory</Link>
           <ChevronRight className="h-4 w-4 mx-1" />
           <span>Medicine Shortage ({filteredShortages.length})</span>
         </div>

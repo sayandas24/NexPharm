@@ -120,7 +120,7 @@ export default function MedicineGroupDetail({
       </div>
 
       {/* Medicines Table */}
-      <Card className="border-2 border-blue-500">
+      <Card className="border-1 border-zinc-200">
         <Table>
           <TableHeader>
             <TableRow>

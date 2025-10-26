@@ -32,18 +32,20 @@ export default function MedicineGroupsList({
   const [showAddMedicineDialog, setShowAddMedicineDialog] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
-  const {updateMedicineGroup} = useMedicineCRUD()
+  const { updateMedicineGroup } = useMedicineCRUD();
 
   // Extract unique groups from medicines
   const medicineGroups = useMemo(() => {
     const groupMap = new Map<string, MedicinesTable[]>();
 
     medicines.forEach((medicine) => {
-      const groupName = medicine.medicine_group || "Uncategorized";
-      if (!groupMap.has(groupName)) {
-        groupMap.set(groupName, []);
+      if (medicine.medicine_group) {
+        const groupName = medicine.medicine_group;
+        if (!groupMap.has(groupName)) {
+          groupMap.set(groupName, []);
+        }
+        groupMap.get(groupName)?.push(medicine);
       }
-      groupMap.get(groupName)?.push(medicine);
     });
 
     return Array.from(groupMap.entries()).map(([name, meds]) => ({
@@ -68,15 +70,13 @@ export default function MedicineGroupsList({
     );
   }
 
-  const handleAddNewGroup = async(
+  const handleAddNewGroup = async (
     medicineId: string,
     medicineName: string,
     groupName: string
-  ) => { 
-
+  ) => {
     // there can be multiple medicines, so add a loop here
     await updateMedicineGroup(medicineId, groupName);
-    
   };
 
   return (
@@ -113,7 +113,7 @@ export default function MedicineGroupsList({
       </div>
 
       {/* Groups Table */}
-      <Card className="border-2 border-blue-500">
+      <Card className="border-1 border-zinc-200">
         <Table>
           <TableHeader>
             <TableRow>
