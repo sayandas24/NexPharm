@@ -209,6 +209,27 @@ export function useMedicines(pharmacyId?: string) {
     [db, isReady]
   );
 
+  const getBatchesByPharmacy = useCallback(
+    async (pharmacyId?: string) => {
+      if (!isReady || !pharmacyId) return [];
+
+      try {
+        const batches = await db
+          .selectFrom("medicine_batches")
+          .selectAll()
+          .where("pharmacy_id", "=", pharmacyId)
+          .orderBy("expiry_date", "asc")
+          .execute();
+
+        return batches as MedicineBatchTable[];
+      } catch (error) {
+        console.error("Error fetching batches:", error);
+        return [];
+      }
+    },
+    [db, isReady]
+  );
+
   // Watch batches for a specific medicine
   const watchBatchesForMedicine = useCallback(
     (medicineId: string, pharmacyId?: string) => {
@@ -497,5 +518,6 @@ export function useMedicines(pharmacyId?: string) {
     searchMedicinesByName,
     getBatchByNum,
     getMedicineById,
+    getBatchesByPharmacy
   };
 }
