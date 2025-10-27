@@ -17,6 +17,10 @@ export default function Inventory() {
         <Link href="/inventory/med-shortage">
           <Button>Medicine Shortage</Button>
         </Link>
+
+        <Link href="/inventory/alerts">
+          <Button>Alerts</Button>
+        </Link>
       </div>
     </div>
   );
