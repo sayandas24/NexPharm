@@ -159,6 +159,7 @@ export interface SaleTable {
 export interface SaleItemTable {
   id: string;
   sale_id: string;
+  pharmacy_id: string;
   medicine_batch_id: string | null;
   medicine_name: string;
   batch_number: string | null;

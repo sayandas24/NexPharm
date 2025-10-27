@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { PowerSyncProvider } from "@/lib/powersync/PowersyncProvider";
 import ConnectionStatus from "@/components/ConnectionStatus";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,11 +30,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PowerSyncProvider><div>
-          <ConnectionStatus/>
-          {children}
-          
-          </div></PowerSyncProvider>
+        <PowerSyncProvider>
+          <div>
+            <ConnectionStatus />
+            {children}
+          </div>
+        </PowerSyncProvider>
+        <Toaster position="top-right" />
       </body>
     </html>
   );

@@ -285,11 +285,10 @@ export function useMedicines(pharmacyId?: string) {
   const searchMedicine = useCallback(
     async (
       searchTerm: string,
+      pharmacyId?: string,
       searchType?: "id" | "barcode" | "name",
-      pharmacyId?: string
     ) => {
       if (!isReady || !searchTerm) return undefined;
-
       try {
         // Determine search type
         const uuidRegex =
@@ -332,6 +331,7 @@ export function useMedicines(pharmacyId?: string) {
           }
 
           const result = await query.executeTakeFirst();
+
           return result as PharmacyMedicineWithDetails | undefined;
         } else {
           // Search in master medicines catalog
