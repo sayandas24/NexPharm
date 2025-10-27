@@ -1,13 +1,15 @@
 "use client";
 
-import { CustomerListMain } from "@/components/main-components/pos/customers/CustomerListMain";
+import { CustomerProfileMain } from "@/components/main-components/pos/customers/CustomerProfileMain";
 import useAuth from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useEffect } from "react";
 
-export default function CustomersPage() {
+export default function CustomerDetailPage() {
   const { currentPharmacy, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const customerId = params.customerId as string;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -36,5 +38,20 @@ export default function CustomersPage() {
     );
   }
 
-  return <CustomerListMain pharmacyId={currentPharmacy.id} />;
+  if (!customerId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Invalid customer ID</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <CustomerProfileMain
+      customerId={customerId}
+      pharmacyId={currentPharmacy.id}
+    />
+  );
 }

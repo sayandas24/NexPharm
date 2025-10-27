@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BillingMain } from "@/components/main-components/pos/BillingMain";
+import { BillingMain } from "@/components/main-components/pos/billing/BillingMain";
 import useAuth from "@/hooks/use-auth";
 
 export default function BillingPage() {
