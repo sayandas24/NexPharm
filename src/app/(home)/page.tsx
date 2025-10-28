@@ -4,7 +4,7 @@ import { useMedicines } from "@/hooks/useMedicines";
 import { useKyselyDB } from "@/lib/powersync/PowersyncProvider";
 import { useRouter } from "next/navigation";
 import React from "react";
-import {v4 as uuidv4} from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export default function HomePage() {
   const { currentUser, profile, logout } = useAuth();
@@ -12,10 +12,11 @@ export default function HomePage() {
 
   const db = useKyselyDB();
 
-  const { medicines, searchMedicinesByName, searchMedicine, fetchMedicines } = useMedicines();
+  const { medicines, searchMedicinesByName, searchMedicine, fetchMedicines } =
+    useMedicines();
 
   const fetchData = async () => {
-    await fetchMedicines()
+    await fetchMedicines();
   };
 
   // Check what tables PowerSync has created
@@ -50,8 +51,6 @@ export default function HomePage() {
   const addMedicines = async () => {
     try {
       // Query SQLite master table to see all tables
-      
-
     } catch (error) {
       console.error("Error checking tables:", error);
     }
@@ -104,6 +103,12 @@ export default function HomePage() {
         className="text-white border ml-2 border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2"
       >
         Inventory
+      </button>
+      <button
+        onClick={() => router.push("/reports/sales")}
+        className="text-white border ml-2 border-zinc-700 bg-blue-800 rounded-lg p-5 py-2"
+      >
+        Sales
       </button>
     </div>
   );
