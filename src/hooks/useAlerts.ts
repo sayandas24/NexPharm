@@ -1,60 +1,8 @@
-// hooks/useAlerts.ts
 "use client";
 import { useKyselyDB, usePowerSync } from "@/lib/powersync/PowersyncProvider";
+import { Alert, AlertSeverity, AlertType, ExpiryAlertType, UseAlertsReturn } from "@/types/alert.types";
 import { useCallback, useEffect, useState } from "react";
-
-// ============ Types ============
-
-export type AlertType = "low_stock" | "expiry";
-export type AlertSeverity = "critical" | "warning" | "info";
-export type ExpiryAlertType = "15_days" | "30_days" | "90_days";
-
-export interface Alert {
-  id: string;
-  type: AlertType;
-  severity: AlertSeverity;
-  medicineId: string;
-  medicineName: string;
-  genericName: string | null;
-  category: string | null;
-
-  // For low stock alerts
-  currentStock?: number;
-  reorderLevel?: number;
-  isResolved?: boolean;
-
-  // For expiry alerts
-  batchId?: string;
-  batchNumber?: string;
-  expiryDate?: string;
-  daysUntilExpiry?: number;
-  alertType?: ExpiryAlertType;
-  availableQuantity?: number;
-
-  // Common fields
-  isAcknowledged: boolean;
-  acknowledgedBy: string | null;
-  acknowledgedAt: string | null;
-  createdAt: string;
-}
-
-export interface UseAlertsReturn {
-  alerts: Alert[];
-  loading: boolean;
-  error: Error | null;
-
-  // Counts by type
-  lowStockCount: number;
-  expiryCount: number;
-  criticalCount: number;
-
-  // Actions
-  acknowledgeAlert: (alertId: string, alertType: AlertType, userId: string) => Promise<void>;
-  refreshAlerts: () => Promise<void>;
-}
-
-// ============ Hook Implementation ============
-
+ 
 export function useAlerts(pharmacyId: string | undefined): UseAlertsReturn {
   const db = useKyselyDB();
   const { isReady, powerSyncDb } = usePowerSync();
@@ -207,10 +155,32 @@ export function useAlerts(pharmacyId: string | undefined): UseAlertsReturn {
           };
         });
 
+        // Filter out duplicate expiry alerts - keep only the most urgent per batch
+        const uniqueExpiryAlerts = transformedExpiryAlerts.reduce((acc, alert) => {
+          const existing = acc.find(a => a.batchId === alert.batchId);
+          
+          if (!existing) {
+            acc.push(alert);
+          } else {
+            // Keep the more urgent alert (15_days > 30_days > 90_days)
+            const urgencyOrder = { '15_days': 1, '30_days': 2, '90_days': 3 };
+            const currentUrgency = urgencyOrder[alert.alertType!] || 999;
+            const existingUrgency = urgencyOrder[existing.alertType!] || 999;
+            
+            if (currentUrgency < existingUrgency) {
+              // Replace with more urgent alert
+              const index = acc.indexOf(existing);
+              acc[index] = alert;
+            }
+          }
+          
+          return acc;
+        }, [] as Alert[]);
+
         // Combine and sort alerts by severity and creation date
         const allAlerts = [
           ...transformedStockAlerts,
-          ...transformedExpiryAlerts,
+          ...uniqueExpiryAlerts,  // Use filtered expiry alerts
         ].sort((a, b) => {
           // Sort by severity first (critical > warning > info)
           const severityOrder = { critical: 0, warning: 1, info: 2 };

@@ -8,6 +8,8 @@ import Link from "next/link";
 import AlertTable from "./AlertTable";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
+import { useAlertNotifications } from "@/hooks/useAlertNotifications";
+import NotificationSettings from "./NotificationSettings";
 
 export default function AlertsMain() {
   const { currentPharmacy, currentUser } = useAuth();
@@ -28,6 +30,13 @@ export default function AlertsMain() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedAlerts, setSelectedAlerts] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  // Enable browser notifications for new alerts
+  useAlertNotifications({
+    alerts,
+    enabled: notificationsEnabled,
+  });
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -285,14 +294,17 @@ export default function AlertsMain() {
               Monitor low stock and expiring medicines
             </p>
           </div>
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
+          <div className="flex items-center gap-3">
+            <NotificationSettings />
+            <Button
+              onClick={handleExport}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
         </div>
       </div>
 
