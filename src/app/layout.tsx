@@ -4,6 +4,9 @@ import "./globals.css";
 import { PowerSyncProvider } from "@/lib/powersync/PowersyncProvider";
 import ConnectionStatus from "@/components/ConnectionStatus";
 import { Toaster } from "react-hot-toast";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/shadcn-sidebar/app-sidebar";
+import Header from "@/components/main-components/navigation/header/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,13 +33,22 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PowerSyncProvider>
-          <div>
-            <ConnectionStatus />
-            {children}
-          </div>
-        </PowerSyncProvider>
-        <Toaster position="top-right" />
+        <SidebarProvider>
+          <AppSidebar />
+
+          <SidebarInset>
+            <PowerSyncProvider>
+              <div>
+
+                <Header />
+                <ConnectionStatus />
+                {children}
+              </div>
+
+            </PowerSyncProvider>
+            <Toaster position="top-right" />
+          </SidebarInset>
+        </SidebarProvider>
       </body>
     </html>
   );
