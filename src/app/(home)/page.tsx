@@ -110,6 +110,12 @@ export default function HomePage() {
       >
         Sales
       </button>
+      <button
+        onClick={() => router.push("/scan")}
+        className="text-white border ml-2 border-zinc-700 bg-green-800 rounded-lg p-5 py-2"
+      >
+        Scan
+      </button>
     </div>
   );
 }

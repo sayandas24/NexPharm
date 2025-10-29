@@ -3,7 +3,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Camera, SwitchCamera, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CameraError, CameraErrorType, CameraState } from "@/types/scanner-types";
+import {
+  CameraError,
+  CameraErrorType,
+  CameraState,
+} from "@/types/scanner-types";
 import { captureImageFromVideo } from "@/utils/image-processing.utils";
 
 interface CameraInterfaceProps {
@@ -18,6 +22,7 @@ export default function CameraInterface({
   isProcessing,
 }: CameraInterfaceProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null); // Store stream in ref for immediate access
   const [cameraState, setCameraState] = useState<CameraState>({
     stream: null,
     facingMode: "environment",
@@ -34,6 +39,7 @@ export default function CameraInterface({
     return () => {
       releaseCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-initialize when facing mode changes
@@ -41,6 +47,7 @@ export default function CameraInterface({
     if (cameraState.hasPermission) {
       initializeCamera();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraState.facingMode]);
 
   /**
@@ -57,8 +64,9 @@ export default function CameraInterface({
       }
 
       // Release existing stream if any
-      if (cameraState.stream) {
-        cameraState.stream.getTracks().forEach((track) => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
 
       // Request camera access
@@ -72,6 +80,9 @@ export default function CameraInterface({
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      // Store stream in ref for immediate access
+      streamRef.current = stream;
 
       // Set stream to video element
       if (videoRef.current) {
@@ -98,7 +109,10 @@ export default function CameraInterface({
   const handleCameraError = (err: any) => {
     let error: CameraError;
 
-    if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+    if (
+      err.name === "NotAllowedError" ||
+      err.name === "PermissionDeniedError"
+    ) {
       error = {
         type: CameraErrorType.PERMISSION_DENIED,
         message: "Camera permission denied",
@@ -106,14 +120,20 @@ export default function CameraInterface({
           "Please allow camera access in your browser settings to use the scanner.",
         action: "settings",
       };
-    } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+    } else if (
+      err.name === "NotFoundError" ||
+      err.name === "DevicesNotFoundError"
+    ) {
       error = {
         type: CameraErrorType.NO_CAMERA_FOUND,
         message: "No camera found",
         userMessage: "No camera device was found on your device.",
         action: "fallback",
       };
-    } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+    } else if (
+      err.name === "NotReadableError" ||
+      err.name === "TrackStartError"
+    ) {
       error = {
         type: CameraErrorType.CAMERA_IN_USE,
         message: "Camera is in use",
@@ -125,7 +145,8 @@ export default function CameraInterface({
       error = {
         type: CameraErrorType.UNKNOWN_ERROR,
         message: err.message || "Unknown camera error",
-        userMessage: "An error occurred while accessing the camera. Please try again.",
+        userMessage:
+          "An error occurred while accessing the camera. Please try again.",
         action: "retry",
       };
     }
@@ -135,17 +156,23 @@ export default function CameraInterface({
   };
 
   /**
-   * Capture image from video stream
+   * Capture image from video stream and stop camera
    */
   const handleCapture = () => {
-    if (!videoRef.current || !cameraState.stream) {
+    if (!videoRef.current || !streamRef.current) {
       return;
     }
 
     const imageData = captureImageFromVideo(videoRef.current);
 
     if (imageData) {
+      // Stop the camera stream immediately after capture
+      console.log("Stopping camera after capture...");
+      releaseCamera();
+
+      // Call the onCapture callback
       onCapture(imageData);
+      console.log("Image captured and camera stopped");
     } else {
       onError({
         type: CameraErrorType.UNKNOWN_ERROR,
@@ -170,10 +197,31 @@ export default function CameraInterface({
    * Release camera resources
    */
   const releaseCamera = () => {
-    if (cameraState.stream) {
-      cameraState.stream.getTracks().forEach((track) => track.stop());
-      setCameraState((prev) => ({ ...prev, stream: null }));
+    console.log("Releasing camera resources...");
+
+    // Stop all tracks from the stream using ref (immediate access)
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        track.stop();
+        console.log(
+          "Stopped camera track:",
+          track.label,
+          "- State:",
+          track.readyState
+        );
+      });
+      streamRef.current = null;
     }
+
+    // Clear video element source
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+      console.log("Cleared video srcObject");
+    }
+
+    // Update state
+    setCameraState((prev) => ({ ...prev, stream: null, hasPermission: false }));
+    console.log("Camera released successfully");
   };
 
   /**

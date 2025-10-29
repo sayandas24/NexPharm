@@ -40,6 +40,7 @@ export default function ScanMedicineToCheckStock() {
   // Workflow state
   const [workflowState, setWorkflowState] = useState<ScanWorkflowState>("idle");
   const [progressMessage, setProgressMessage] = useState<string>("");
+  const [cameraKey, setCameraKey] = useState<number>(0); // Key to force camera remount
 
   // Scan results
   const [ocrText, setOcrText] = useState<string>("");
@@ -142,7 +143,7 @@ export default function ScanMedicineToCheckStock() {
   const handleSelectMedicine = async (match: MedicineMatch) => {
     setSelectedMatch(match);
     setProgressMessage("Loading stock information...");
-
+    console.log("Selected match:", match);
     try {
       // Fetch batches for the medicine
       const batches = await fetchBatchesForMedicine(
@@ -188,6 +189,8 @@ export default function ScanMedicineToCheckStock() {
     setError(null);
     setWorkflowState("camera_ready");
     setProgressMessage("");
+    // Increment key to force camera remount and restart
+    setCameraKey((prev) => prev + 1);
   };
 
   /**
@@ -230,6 +233,8 @@ export default function ScanMedicineToCheckStock() {
     );
   }
 
+  console.log("Workflow state:", workflowState);
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -270,6 +275,7 @@ export default function ScanMedicineToCheckStock() {
           workflowState === "camera_initializing" ||
           workflowState === "camera_ready") && (
           <CameraInterface
+            key={cameraKey}
             onCapture={handleCapture}
             onError={handleCameraError}
             isProcessing={false}
