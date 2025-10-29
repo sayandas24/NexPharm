@@ -22,6 +22,7 @@ export default function Header() {
     const customLabels: Record<string, string> = {
       "med-list": "Medicine Lists",
       "med-groups": "Medicine Groups",
+      pos: "Point of Sale",
     };
 
     if (customLabels[segment]) {
@@ -61,10 +62,12 @@ export default function Header() {
           <BreadcrumbItem>
             <BreadcrumbLink href="/">Home</BreadcrumbLink>
           </BreadcrumbItem>
-          
+
           {/* Show separator only if there are more paths */}
-          {paths.length > 0 && <BreadcrumbSeparator className="hidden md:block" />}
-          
+          {paths.length > 0 && (
+            <BreadcrumbSeparator className="hidden md:block" />
+          )}
+
           {/* Dynamic path breadcrumbs */}
           {paths.map((segment, index) => {
             const isLast = index === paths.length - 1;

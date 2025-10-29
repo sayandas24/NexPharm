@@ -5,6 +5,7 @@ import { InventoryStatusCard } from "./InventoryStatusCard";
 import { RevenueCard } from "./RevenueCard";
 import { MedicinesAvailableCard } from "./MedicinesAvailableCard";
 import { MedicineShortageCard } from "./MedicineShortageCard";
+import QuickActions from "../quick-action-components/QuickActionsMain";
 
 export function DashboardMain() {
   const { currentPharmacy } = useAuth();
@@ -50,7 +51,7 @@ export function DashboardMain() {
         <p className="text-gray-600 mt-1">Welcome to {currentPharmacy.name}</p>
       </div>
 
-      <div className="grid grid-cols-1 max-[900px]:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid max-[1024px]:grid-cols-2 lg:grid-cols-4 gap-4">
         <InventoryStatusCard
           status={metrics?.inventoryStatus || "Good"}
           loading={loading}
@@ -70,6 +71,9 @@ export function DashboardMain() {
           loading={loading}
         />
       </div>
+
+      {/* Quick Actions Section */}
+      <QuickActions/>
     </div>
   );
 }
