@@ -128,10 +128,94 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  // Connect function
-  const connect = useCallback(async () => {
+  // Auto-reconnect when network comes back online
+  useEffect(() => {
+    if (typeof window === "undefined" || !isReady) return;
+
+    let reconnectTimeout: NodeJS.Timeout;
+    let isReconnecting = false;
+
+    const handleOnline = async () => {
+      console.log("🌐 Network is back online");
+
+      // Check if PowerSync is disconnected
+      if (!powerSyncClient.powerSyncDb.connected && !isReconnecting) {
+        isReconnecting = true;
+        console.log("🔄 Attempting automatic reconnection...");
+
+        // Wait a bit for network to stabilize
+        reconnectTimeout = setTimeout(async () => {
+          try {
+            setIsConnecting(true);
+            setError(null);
+
+            await powerSyncClient.powerSyncDb.connect(
+              powerSyncClient.supabaseConnector
+            );
+
+            console.log("✅ Automatic reconnection successful");
+          } catch (err) {
+            console.error("❌ Automatic reconnection failed:", err);
+            setError(err as Error);
+
+            // Retry after 5 seconds
+            reconnectTimeout = setTimeout(() => {
+              isReconnecting = false;
+              handleOnline();
+            }, 5000);
+          } finally {
+            isReconnecting = false;
+          }
+        }, 2000); // Wait 2 seconds for network to stabilize
+      }
+    };
+
+    const handleOffline = () => {
+      console.log("📡 Network went offline");
+      // Clear any pending reconnection attempts
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+
+    // Listen to browser online/offline events
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Also check connection status periodically when offline
+    const connectionCheckInterval = setInterval(() => {
+      if (
+        navigator.onLine &&
+        !powerSyncClient.powerSyncDb.connected &&
+        !isReconnecting
+      ) {
+        console.log(
+          "🔍 Detected online but not connected, attempting reconnect..."
+        );
+        handleOnline();
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      clearInterval(connectionCheckInterval);
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, [isReady]);
+
+  // Connect function with retry logic
+  const connect = useCallback(async (retries = 3) => {
     if (!powerSyncClient.powerSyncDb) {
       console.error("❌ PowerSync database not initialized");
+      return;
+    }
+
+    // Check if already connected
+    if (powerSyncClient.powerSyncDb.connected) {
+      console.log("ℹ️ Already connected to PowerSync");
       return;
     }
 
@@ -152,10 +236,19 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
       }, 10000); // 10 second timeout
 
       // Note: isConnecting will be set to false by the statusChanged listener
-    } catch (err) {
+    } catch (err: any) {
       console.error("❌ Connection failed:", err);
-      setError(err as Error);
-      setIsConnecting(false);
+
+      // Retry logic
+      if (retries > 0) {
+        console.log(`🔄 Retrying connection... (${retries} attempts left)`);
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
+        return connect(retries - 1);
+      } else {
+        setError(err as Error);
+        setIsConnecting(false);
+        throw err;
+      }
     }
   }, []);
 

@@ -19,6 +19,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 export function NavMain({
   items,
@@ -80,10 +81,10 @@ export function NavMain({
                   isActive={itemIsActive}
                   className="transition-colors duration-150"
                 >
-                  <a href={item.url}>
+                  <Link href={item.url}>
                     <item.icon className={getColorClass(item.color)} />
                     <span>{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
                 {item.items?.length ? (
                   <>
@@ -102,9 +103,9 @@ export function NavMain({
                               isActive={isSubItemActive(subItem.url)}
                               className="transition-colors duration-150"
                             >
-                              <a href={subItem.url}>
+                              <Link href={subItem.url}>
                                 <span>{subItem.title}</span>
-                              </a>
+                              </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
