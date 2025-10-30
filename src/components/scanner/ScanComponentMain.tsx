@@ -54,7 +54,7 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
 
   const [billOpen, setBillOpen] = useState(false);
   // Workflow state
-  const [workflowState, setWorkflowState] = useState<ScanWorkflowState>("idle");
+  const [workflowState, setWorkflowState] = useState<ScanWorkflowState>("camera_ready");
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [cameraKey, setCameraKey] = useState<number>(0); // Key to force camera remount
   const [currentProcessingStep, setCurrentProcessingStep] = useState<
