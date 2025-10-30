@@ -22,7 +22,9 @@ export default function CameraInterface({
   isProcessing,
 }: CameraInterfaceProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null); // Store stream in ref for immediate access
+  const streamRef = useRef<MediaStream | null>(null);
+  const isMountedRef = useRef<boolean>(false);
+  const initializingRef = useRef<boolean>(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [cameraState, setCameraState] = useState<CameraState>({
     stream: null,
@@ -34,11 +36,35 @@ export default function CameraInterface({
 
   // Initialize camera on mount and when facing mode changes
   useEffect(() => {
-    initializeCamera();
+    let cancelled = false;
+    
+    const init = async () => {
+      if (initializingRef.current) {
+        console.log("⏭️ Skipping initialization - already in progress");
+        return;
+      }
+      
+      initializingRef.current = true;
+      await initializeCamera();
+      initializingRef.current = false;
+      
+      if (!cancelled) {
+        isMountedRef.current = true;
+      }
+    };
+    
+    init();
 
-    // Cleanup on unmount
+    // Cleanup on unmount only
     return () => {
-      releaseCamera();
+      cancelled = true;
+      if (isMountedRef.current) {
+        console.log("🧹 Component unmounting, releasing camera");
+        isMountedRef.current = false;
+        releaseCamera();
+      } else {
+        console.log("⏭️ Skipping cleanup - component never fully mounted");
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facingMode]);
@@ -132,17 +158,24 @@ export default function CameraInterface({
         }
       }
 
-      setCameraState((prev) => ({
-        ...prev,
-        stream,
-        hasPermission: true,
-        error: null,
-      }));
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setCameraState((prev) => ({
+          ...prev,
+          stream,
+          hasPermission: true,
+          error: null,
+        }));
+      }
     } catch (err: any) {
       console.error("Camera initialization error:", err);
-      handleCameraError(err);
+      if (isMountedRef.current) {
+        handleCameraError(err);
+      }
     } finally {
-      setIsInitializing(false);
+      if (isMountedRef.current) {
+        setIsInitializing(false);
+      }
     }
   };
 
