@@ -11,6 +11,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 export default function Header() {
   const pathname = usePathname();
@@ -60,7 +61,7 @@ export default function Header() {
         <BreadcrumbList>
           {/* Home breadcrumb */}
           <BreadcrumbItem>
-            <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            <Link href="/">Home</Link>
           </BreadcrumbItem>
 
           {/* Show separator only if there are more paths */}
@@ -80,7 +81,7 @@ export default function Header() {
                   {isLast ? (
                     <BreadcrumbPage>{label}</BreadcrumbPage>
                   ) : (
-                    <BreadcrumbLink href={href}>{label}</BreadcrumbLink>
+                    <Link href={href}>{label}</Link>
                   )}
                 </BreadcrumbItem>
                 {!isLast && <BreadcrumbSeparator className="hidden md:block" />}

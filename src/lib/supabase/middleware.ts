@@ -49,9 +49,9 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   );
 
-  // Redirect to login if accessing protected route without auth
+  // Redirect to register if accessing protected route without auth
   if (isProtectedPath && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/register", request.url));
   }
 
   // Redirect to dashboard if accessing auth pages while logged in

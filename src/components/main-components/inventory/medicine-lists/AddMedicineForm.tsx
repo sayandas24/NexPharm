@@ -1,21 +1,20 @@
-'use client';
+"use client";
 
-import { Formik, Form, Field } from 'formik';
-import * as Yup from 'yup';
-import { useKyselyDB } from '@/lib/powersync/PowersyncProvider';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Formik, Form, Field } from "formik";
+import * as Yup from "yup";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import toast from 'react-hot-toast';
+} from "@/components/ui/select";
+import toast from "react-hot-toast";
 import {
   Save,
   X,
@@ -24,14 +23,13 @@ import {
   DollarSign,
   AlertTriangle,
   Info,
-} from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import useMedicineCRUD from '@/hooks/useMedicineCRUD';
-import { MedicinesTable, PharmacyTable } from '@/types/database-types';
-import { v4 as uuidv4 } from 'uuid';
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import useMedicineCRUD from "@/hooks/useMedicineCRUD";
+import { v4 as uuidv4 } from "uuid";
 
 const medicineSchema = Yup.object().shape({
-  name: Yup.string().min(2, 'Too short').required('Medicine name is required'),
+  name: Yup.string().min(2, "Too short").required("Medicine name is required"),
   generic_name: Yup.string().nullable(),
   brand_names: Yup.string().nullable(),
   manufacturer: Yup.string().nullable(),
@@ -48,9 +46,9 @@ const medicineSchema = Yup.object().shape({
   shelf_life: Yup.string().nullable(),
   barcode: Yup.string().nullable(),
   requires_prescription: Yup.number().oneOf([0, 1]).nullable(),
-  medicine_image_url: Yup.string().url('Invalid URL').nullable(),
+  medicine_image_url: Yup.string().url("Invalid URL").nullable(),
   medicine_images: Yup.string().nullable(),
-  package_image_url: Yup.string().url('Invalid URL').nullable(),
+  package_image_url: Yup.string().url("Invalid URL").nullable(),
   unit_type: Yup.string().nullable(),
   medicine_group: Yup.string().nullable(),
   tags: Yup.string().nullable(),
@@ -60,26 +58,28 @@ const medicineSchema = Yup.object().shape({
 
 interface AddMedicineFormProps {
   onSuccess?: () => void;
-  pharmacy?: PharmacyTable;
+  pharmacy?: any;
 }
 
 export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
-  
-  const { createMedicine ,error,loading} = useMedicineCRUD()
+  const { createMedicine, error, loading } = useMedicineCRUD();
 
-  const handleSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
+  const handleSubmit = async (
+    values: any,
+    { setSubmitting, resetForm }: any
+  ) => {
     try {
       const res = await createMedicine({
         id: uuidv4(),
         pharmacy_id: pharmacy?.id,
-        ...values
+        ...values,
       });
-      console.log(res, "Medicine adding response")
+      console.log(res, "Medicine adding response");
       // toast.success('Medicine added successfully!');
       resetForm();
       onSuccess?.();
     } catch (error) {
-      toast.error('Failed to add medicine');
+      toast.error("Failed to add medicine");
       console.error(error);
     } finally {
       setSubmitting(false);
@@ -89,7 +89,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
   return (
     <Formik
       initialValues={{
-        name: '',
+        name: "",
         generic_name: null,
         brand_names: null,
         manufacturer: null,
@@ -136,7 +136,9 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                   id="name"
                   name="name"
                   placeholder="e.g., Paracetamol 500mg"
-                  className={touched.name && errors.name ? 'border-red-500' : ''}
+                  className={
+                    touched.name && errors.name ? "border-red-500" : ""
+                  }
                 />
                 {touched.name && errors.name && (
                   <p className="text-red-500 text-xs mt-1">{errors.name}</p>
@@ -176,19 +178,23 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               <div>
                 <Label htmlFor="category">Category</Label>
                 <Select
-                  onValueChange={(value) => setFieldValue('category', value)}
-                  value={values.category || ''}
+                  onValueChange={(value) => setFieldValue("category", value)}
+                  value={values.category || ""}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Generic Medicine">Generic Medicine</SelectItem>
+                    <SelectItem value="Generic Medicine">
+                      Generic Medicine
+                    </SelectItem>
                     <SelectItem value="Diabetes">Diabetes</SelectItem>
                     <SelectItem value="Analgesic">Analgesic</SelectItem>
                     <SelectItem value="Antibiotic">Antibiotic</SelectItem>
                     <SelectItem value="Antacid">Antacid</SelectItem>
-                    <SelectItem value="Cardiovascular">Cardiovascular</SelectItem>
+                    <SelectItem value="Cardiovascular">
+                      Cardiovascular
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -436,10 +442,13 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                   id="requires_prescription"
                   checked={values.requires_prescription === 1}
                   onCheckedChange={(checked) =>
-                    setFieldValue('requires_prescription', checked ? 1 : 0)
+                    setFieldValue("requires_prescription", checked ? 1 : 0)
                   }
                 />
-                <Label htmlFor="requires_prescription" className="cursor-pointer">
+                <Label
+                  htmlFor="requires_prescription"
+                  className="cursor-pointer"
+                >
                   Requires Prescription (Rx)
                 </Label>
               </div>
@@ -448,7 +457,9 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                 <Checkbox
                   id="is_otc"
                   checked={values.is_otc === 1}
-                  onCheckedChange={(checked) => setFieldValue('is_otc', checked ? 1 : 0)}
+                  onCheckedChange={(checked) =>
+                    setFieldValue("is_otc", checked ? 1 : 0)
+                  }
                 />
                 <Label htmlFor="is_otc" className="cursor-pointer">
                   Over-the-Counter (OTC) Medicine
@@ -459,7 +470,9 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                 <Checkbox
                   id="is_active"
                   checked={values.is_active === 1}
-                  onCheckedChange={(checked) => setFieldValue('is_active', checked ? 1 : 0)}
+                  onCheckedChange={(checked) =>
+                    setFieldValue("is_active", checked ? 1 : 0)
+                  }
                 />
                 <Label htmlFor="is_active" className="cursor-pointer">
                   Active in Inventory
@@ -476,7 +489,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? 'Saving...' : 'Save Medicine'}
+              {isSubmitting ? "Saving..." : "Save Medicine"}
             </Button>
             <Button type="button" variant="outline" className="flex-1">
               <X className="mr-2 h-4 w-4" />

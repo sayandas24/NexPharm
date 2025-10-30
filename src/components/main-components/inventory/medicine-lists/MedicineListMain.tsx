@@ -132,15 +132,11 @@ export default function MedicineListMain() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-white">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center text-sm text-gray-500 mb-2">
-          <span className="font-semibold text-gray-700">Inventory</span>
-          <ChevronRight className="h-4 w-4 mx-1" />
-          <span>List of Medicines ({fullyFilteredMedicines.length})</span>
-        </div>
-        <p className="text-gray-600">List of medicines available for sales.</p>
+      <div className="mb-2">
+         
+        <p className="text-gray-600 text-xl italic font-medium">List of medicines available for sales.</p>
       </div>
 
       {/* Search and Filter Bar */}
@@ -242,7 +238,7 @@ export default function MedicineListMain() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedMedicines.map((medicine) => (
+              {paginatedMedicines.map((medicine: any) => (
                 <TableRow key={medicine.id}>
                   <TableCell className="font-medium">{medicine.name}</TableCell>
                   <TableCell className="font-mono text-sm">

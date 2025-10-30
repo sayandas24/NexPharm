@@ -21,13 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import useAuth, { SwitchStage } from "@/hooks/use-auth";
 
-export function PharmacySwitcher({
-  versions,
-  defaultVersion,
-}: {
-  versions: string[];
-  defaultVersion: string;
-}) {
+export function PharmacySwitcher({}) {
   const [isSwitching, setIsSwitching] = React.useState(false);
   const [switchProgress, setSwitchProgress] =
     React.useState<SwitchStage | null>(null);
@@ -36,7 +30,13 @@ export function PharmacySwitcher({
     string | null
   >(null);
 
-  const { currentPharmacy, pharmacies, switchPharmacy } = useAuth();
+  const {
+    currentPharmacy,
+    pharmacies,
+    switchPharmacy,
+    isLoadingFromCache,
+    hasCachedData,
+  } = useAuth();
 
   // Progress messages for each stage
   const progressMessages: Record<SwitchStage, string> = {
@@ -152,7 +152,14 @@ export function PharmacySwitcher({
                 )}
               </div>
               <div className="flex flex-col gap-0.5 leading-none truncate">
-                {isSwitching && switchProgress ? (
+                {isLoadingFromCache ? (
+                  <>
+                    <span className="font-medium text-sm">Loading...</span>
+                    <span className="text-[.6rem] text-zinc-500">
+                      Please wait
+                    </span>
+                  </>
+                ) : isSwitching && switchProgress ? (
                   <>
                     <span className="font-medium text-sm">Switching...</span>
                     <span className="text-[.6rem] text-zinc-500">

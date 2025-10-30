@@ -33,7 +33,7 @@ const data = {
   user: {
     name: "sayan",
     email: "sayan@pharmacy.com",
-    avatar: "/avatars/shadcn.jpg",
+    avatar: "https://tanerawoqrxzhwqryxeb.supabase.co/storage/v1/object/public/images/Untitled%20design(1).png",
   },
   navMain: [
     {
@@ -141,10 +141,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <PharmacySwitcher
-                versions={["v1.0", "v1.1"]}
-                defaultVersion="v1.0"
-              />
+              <PharmacySwitcher />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

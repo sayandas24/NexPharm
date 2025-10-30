@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Alert } from "@/hooks/useAlerts";
 import { ChevronDown, ChevronRight, Package, Calendar } from "lucide-react";
+import { Alert } from "@/types/alert.types";
 
 interface AlertTableProps {
   alerts: Alert[];

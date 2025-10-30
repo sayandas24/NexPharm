@@ -72,7 +72,7 @@ const PaymentMethodChart = memo(function PaymentMethodChart({ data, isLoading }:
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={(entry) => {
+              label={(entry: any) => {
                 const percentage = ((entry.revenue / totalRevenue) * 100).toFixed(1)
                 return `${entry.payment_method}: ${percentage}%`
               }}

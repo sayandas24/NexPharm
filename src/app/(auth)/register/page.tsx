@@ -126,7 +126,7 @@ export default function RegisterPage() {
   });
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-4">
           {/* Progress Indicator */}

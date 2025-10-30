@@ -34,7 +34,7 @@ const MedicineSalesChart = memo(function MedicineSalesChart({ data, isLoading }:
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>

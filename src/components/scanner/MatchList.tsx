@@ -104,7 +104,7 @@ function MatchItem({ match, index, onSelect }: MatchItemProps) {
           {/* Matched Text */}
           {matchedText !== medicine.name && (
             <p className="text-xs text-gray-500 mt-2 truncate">
-              Matched: "{matchedText}"
+              Matched: &quot;{matchedText}&quot;
             </p>
           )}
         </div>

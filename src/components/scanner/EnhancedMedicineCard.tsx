@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState } from "react";
@@ -52,14 +53,37 @@ export default function EnhancedMedicineCard({
   const { medicine } = match;
   const [showAllBatches, setShowAllBatches] = useState(false);
 
+  console.log(match.medicine.medicine_image_url)
+
   return (
     <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-lg ">
       {/* Header with Gradient */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-300 text-white p-6">
-        <h2 className="text-2xl font-bold mb-2">{medicine.name}</h2>
-        {medicine.generic_name && (
-          <p className="text-purple-100 text-base">{medicine.generic_name}</p>
-        )}
+       <div className="bg-gradient-to-r from-purple-500 to-purple-300 text-white p-2">
+        <div className="flex items-center gap-4">
+          {/* Medicine Image */}
+          {medicine.medicine_image_url && (
+            <div className="flex-shrink-0 ">
+              <div className="w-[9rem] h-[9rem] bg-white rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
+                <img
+                  src={medicine.medicine_image_url}
+                  alt={medicine.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Text Content */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-2xl font-bold mb-2">{medicine.name}</h2>
+            {medicine.generic_name && (
+              <p className="text-purple-100 text-base">{medicine.generic_name}</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Content */}

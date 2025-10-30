@@ -4,6 +4,7 @@
 import { usePowerSync } from "@/lib/powersync/PowersyncProvider";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { AuthCacheService } from "@/lib/cache/auth-cache-service";
 
 // ============ Types ============
 interface Profile {
@@ -63,6 +64,10 @@ export default function useAuth() {
   const [currentPharmacy, setCurrentPharmacy] = useState<Pharmacy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Cache-related state
+  const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
+  const [hasCachedData, setHasCachedData] = useState(false);
 
   const {
     supabaseConnector,
@@ -71,6 +76,9 @@ export default function useAuth() {
     reconnect,
     waitForSync,
   } = usePowerSync();
+  
+  // Cache service instance
+  const cacheService = AuthCacheService.getInstance();
 
   // ============ Internal Helper: Get User Data ============
   const fetchUserData = useCallback(
@@ -383,6 +391,16 @@ export default function useAuth() {
         `✅ Pharmacy switch complete in ${duration}ms:`,
         pharmacy.pharmacies.name
       );
+      
+      // Update cache with new pharmacy
+      if (currentUser && profile) {
+        cacheService.set({
+          user: { id: currentUser.id, email: currentUser.email || "" },
+          profile,
+          currentPharmacy: pharmacy.pharmacies,
+          pharmacies,
+        });
+      }
     } catch (err: any) {
       const duration = Date.now() - startTime;
       console.error(
@@ -436,8 +454,11 @@ export default function useAuth() {
       setProfile(null);
       setPharmacies([]);
       setCurrentPharmacy(null);
+      cacheService.clear();
     } catch (err: any) {
       setError(err.message);
+      // Clear cache even if logout fails
+      cacheService.clear();
       throw err;
     } finally {
       setLoading(false);
@@ -482,13 +503,64 @@ export default function useAuth() {
     }
   };
 
+  //mark ============  Load from cache on mount ============
+  useEffect(() => {
+    const cached = cacheService.get();
+    if (cached && cached.user && cached.profile) {
+      console.log("📦 Restoring auth state from cache");
+      setCurrentUser(cached.user as User);
+      setProfile(cached.profile);
+      setPharmacies(cached.pharmacies);
+      setCurrentPharmacy(cached.currentPharmacy);
+      setHasCachedData(true);
+    }
+    setIsLoadingFromCache(false);
+  }, [cacheService]);
+
+  //mark ============ Validate cached pharmacy against fresh pharmacy list ============
+  useEffect(() => {
+    if (pharmacies.length > 0 && currentPharmacy && hasCachedData) {
+      // Check if cached pharmacy still exists in user's pharmacy list
+      const pharmacyExists = pharmacies.some(
+        (p) => p.pharmacy_id === currentPharmacy.id
+      );
+      
+      if (!pharmacyExists) {
+        console.warn("⚠️ Cached pharmacy no longer in user's pharmacy list, clearing");
+        setCurrentPharmacy(null);
+        
+        // Update cache with null pharmacy
+        if (currentUser && profile) {
+          cacheService.set({
+            user: { id: currentUser.id, email: currentUser.email || "" },
+            profile,
+            currentPharmacy: null,
+            pharmacies,
+          });
+        }
+      }
+    }
+  }, [pharmacies, currentPharmacy, hasCachedData, currentUser, profile, cacheService]);
+
+  //mark ============ Update cache when data changes ============
+  useEffect(() => {
+    if (currentUser && profile) {
+      cacheService.set({
+        user: currentUser ? { id: currentUser.id, email: currentUser.email || "" } : null,
+        profile,
+        currentPharmacy,
+        pharmacies,
+      });
+    }
+  }, [currentUser, profile, currentPharmacy, pharmacies, cacheService]);
+
   // ============ Initialize ============
   useEffect(() => {
     getUser();
 
     const { data: authListener } =
       supabaseConnector.client.auth.onAuthStateChange(
-        async (event, session) => {
+        async (event) => {
           if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
             await getUser();
           } else if (event === "SIGNED_OUT") {
@@ -496,12 +568,13 @@ export default function useAuth() {
             setProfile(null);
             setPharmacies([]);
             setCurrentPharmacy(null);
+            cacheService.clear();
           }
         }
       );
 
     return () => authListener.subscription.unsubscribe();
-  }, [getUser, supabaseConnector]);
+  }, [getUser, supabaseConnector, cacheService]);
 
   // ============ Return ============
   return {
@@ -514,6 +587,8 @@ export default function useAuth() {
     loading,
     error,
     isAuthenticated: !!currentUser,
+    isLoadingFromCache,
+    hasCachedData,
 
     // Methods
     signInWithPassword,

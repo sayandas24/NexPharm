@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 import { useMedicines } from "@/hooks/useMedicines";
@@ -40,6 +41,8 @@ export default function MedicineDetails() {
   const { currentPharmacy } = useAuth();
 
   const { deleteMedicine } = useMedicineCRUD();
+
+  console.log(medicine.medicine_image_url, "medicine");
 
   // Fetch medicine data on mount and when medicineId changes
   useEffect(() => {
@@ -115,38 +118,6 @@ export default function MedicineDetails() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center text-sm text-gray-500 mb-2">
-              <span
-                className="cursor-pointer hover:text-gray-700"
-                onClick={() => router.push("/inventory")}
-              >
-                Inventory
-              </span>
-              <ChevronRight className="w-4 h-4 mx-1" />
-              <span
-                className="cursor-pointer hover:text-gray-700"
-                onClick={() => router.push("/inventory/med-list")}
-              >
-                List of Medicines
-              </span>
-              <ChevronRight className="w-4 h-4 mx-1" />
-              <span className="text-gray-900 font-semibold">
-                {medicine.name}
-              </span>
-            </div>
-            <p className="text-gray-600">
-              List of medicines available for sales.
-            </p>
-          </div>
-          <button className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
-            <Pencil className="w-4 h-4" />
-            Edit Details
-          </button>
-        </div>
-      </div>
 
       {/* Content */}
       <div className="px-8 py-6">
@@ -210,7 +181,7 @@ export default function MedicineDetails() {
 
         {/* Medicine Information Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Basic Information */}
+          {/* Basic Information with Image */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -218,43 +189,65 @@ export default function MedicineDetails() {
                 Basic Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm text-gray-600">Medicine Name</span>
-                <span className="font-semibold text-gray-900">
-                  {medicine.name}
-                </span>
-              </div>
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm text-gray-600">Generic Name</span>
-                <span className="font-semibold text-gray-900">
-                  {medicine.generic_name || "N/A"}
-                </span>
-              </div>
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm text-gray-600">Category</span>
-                <Badge variant="secondary">{medicine.category || "N/A"}</Badge>
-              </div>
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm text-gray-600">Medicine Group</span>
-                <span className="font-semibold text-gray-900">
-                  {medicine.medicine_group || "N/A"}
-                </span>
-              </div>
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm text-gray-600">Unit Type</span>
-                <span className="font-semibold text-gray-900">
-                  {medicine.unit_type || "N/A"}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Strength</span>
-                <span className="font-semibold text-gray-900">
-                  {medicine.strength || "N/A"}
-                </span>
+            <CardContent className="space-y-4">
+              {/* Medicine Image */}
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <span className="text-sm text-gray-600">Medicine Name</span>
+                  <span className="font-semibold text-gray-900">
+                    {medicine.name}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <span className="text-sm text-gray-600">Generic Name</span>
+                  <span className="font-semibold text-gray-900">
+                    {medicine.generic_name || "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <span className="text-sm text-gray-600">Category</span>
+                  <Badge variant="secondary">
+                    {medicine.category || "N/A"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <span className="text-sm text-gray-600">Medicine Group</span>
+                  <span className="font-semibold text-gray-900">
+                    {medicine.medicine_group || "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <span className="text-sm text-gray-600">Unit Type</span>
+                  <span className="font-semibold text-gray-900">
+                    {medicine.unit_type || "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Strength</span>
+                  <span className="font-semibold text-gray-900">
+                    {medicine.strength || "N/A"}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
+
+          {medicine.medicine_image_url && (
+            <Card>
+              <CardContent>
+                <div className="flex justify-center">
+                  <div className="h-[20rem] rounded-lg overflow-hidden">
+                    <img
+                      src={medicine.medicine_image_url}
+                      alt={medicine.name || "Medicine"}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Pricing & Stock */}
           <Card>
