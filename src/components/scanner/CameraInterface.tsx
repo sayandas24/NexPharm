@@ -23,8 +23,6 @@ export default function CameraInterface({
 }: CameraInterfaceProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const isMountedRef = useRef<boolean>(false);
-  const initializingRef = useRef<boolean>(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [cameraState, setCameraState] = useState<CameraState>({
     stream: null,
@@ -36,35 +34,22 @@ export default function CameraInterface({
 
   // Initialize camera on mount and when facing mode changes
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
     
     const init = async () => {
-      if (initializingRef.current) {
-        console.log("⏭️ Skipping initialization - already in progress");
-        return;
-      }
-      
-      initializingRef.current = true;
       await initializeCamera();
-      initializingRef.current = false;
-      
-      if (!cancelled) {
-        isMountedRef.current = true;
+      if (mounted) {
+        console.log("✅ Camera initialization complete");
       }
     };
     
     init();
 
-    // Cleanup on unmount only
+    // Cleanup on unmount
     return () => {
-      cancelled = true;
-      if (isMountedRef.current) {
-        console.log("🧹 Component unmounting, releasing camera");
-        isMountedRef.current = false;
-        releaseCamera();
-      } else {
-        console.log("⏭️ Skipping cleanup - component never fully mounted");
-      }
+      mounted = false;
+      console.log("🧹 Component unmounting, releasing camera");
+      releaseCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facingMode]);
@@ -100,11 +85,7 @@ export default function CameraInterface({
 
       console.log("📹 Requesting camera with constraints:", constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log("✅ Camera stream obtained:", {
-        tracks: stream.getTracks().length,
-        videoTracks: stream.getVideoTracks().length,
-        active: stream.active
-      });
+      console.log("✅ Camera stream obtained");
 
       // Store stream in ref for immediate access
       streamRef.current = stream;
@@ -114,68 +95,28 @@ export default function CameraInterface({
         console.log("📺 Setting stream to video element");
         videoRef.current.srcObject = stream;
 
-        // Wait for video metadata to load
-        await new Promise<void>((resolve, reject) => {
-          if (!videoRef.current) {
-            reject(new Error("Video element not found"));
-            return;
-          }
-
-          const video = videoRef.current;
-          
-          const onLoadedMetadata = () => {
-            console.log("✅ Video metadata loaded:", {
-              width: video.videoWidth,
-              height: video.videoHeight,
-              readyState: video.readyState
-            });
-            resolve();
-          };
-
-          const onError = (e: Event) => {
-            console.error("❌ Video error:", e);
-            reject(new Error("Video failed to load"));
-          };
-
-          video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
-          video.addEventListener("error", onError, { once: true });
-
-          // Timeout after 5 seconds
-          setTimeout(() => {
-            video.removeEventListener("loadedmetadata", onLoadedMetadata);
-            video.removeEventListener("error", onError);
-            reject(new Error("Video load timeout"));
-          }, 5000);
-        });
-
-        // Ensure video plays
+        // Try to play the video
         try {
           await videoRef.current.play();
           console.log("▶️ Video playing successfully");
         } catch (playError) {
-          console.error("❌ Video autoplay failed:", playError);
-          throw playError;
+          console.warn("⚠️ Video autoplay failed (this is normal on some browsers):", playError);
+          // Don't throw - the video will still work, just might not autoplay
         }
       }
 
-      // Only update state if component is still mounted
-      if (isMountedRef.current) {
-        setCameraState((prev) => ({
-          ...prev,
-          stream,
-          hasPermission: true,
-          error: null,
-        }));
-      }
+      // Update state
+      setCameraState((prev) => ({
+        ...prev,
+        stream,
+        hasPermission: true,
+        error: null,
+      }));
     } catch (err: any) {
       console.error("Camera initialization error:", err);
-      if (isMountedRef.current) {
-        handleCameraError(err);
-      }
+      handleCameraError(err);
     } finally {
-      if (isMountedRef.current) {
-        setIsInitializing(false);
-      }
+      setIsInitializing(false);
     }
   };
 
