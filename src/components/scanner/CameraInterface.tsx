@@ -79,14 +79,64 @@ export default function CameraInterface({
         audio: false,
       };
 
+      console.log("📹 Requesting camera with constraints:", constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log("✅ Camera stream obtained:", {
+        tracks: stream.getTracks().length,
+        videoTracks: stream.getVideoTracks().length,
+        active: stream.active
+      });
 
       // Store stream in ref for immediate access
       streamRef.current = stream;
 
       // Set stream to video element
       if (videoRef.current) {
+        console.log("📺 Setting stream to video element");
         videoRef.current.srcObject = stream;
+
+        // Wait for video metadata to load
+        await new Promise<void>((resolve, reject) => {
+          if (!videoRef.current) {
+            reject(new Error("Video element not found"));
+            return;
+          }
+
+          const video = videoRef.current;
+          
+          const onLoadedMetadata = () => {
+            console.log("✅ Video metadata loaded:", {
+              width: video.videoWidth,
+              height: video.videoHeight,
+              readyState: video.readyState
+            });
+            resolve();
+          };
+
+          const onError = (e: Event) => {
+            console.error("❌ Video error:", e);
+            reject(new Error("Video failed to load"));
+          };
+
+          video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
+          video.addEventListener("error", onError, { once: true });
+
+          // Timeout after 5 seconds
+          setTimeout(() => {
+            video.removeEventListener("loadedmetadata", onLoadedMetadata);
+            video.removeEventListener("error", onError);
+            reject(new Error("Video load timeout"));
+          }, 5000);
+        });
+
+        // Ensure video plays
+        try {
+          await videoRef.current.play();
+          console.log("▶️ Video playing successfully");
+        } catch (playError) {
+          console.error("❌ Video autoplay failed:", playError);
+          throw playError;
+        }
       }
 
       setCameraState((prev) => ({
@@ -156,7 +206,7 @@ export default function CameraInterface({
   };
 
   /**
-   * Capture image from video stream and stop camera
+   * Capture image from video stream
    */
   const handleCapture = () => {
     if (!videoRef.current || !streamRef.current) {
@@ -166,13 +216,9 @@ export default function CameraInterface({
     const imageData = captureImageFromVideo(videoRef.current);
 
     if (imageData) {
-      // Stop the camera stream immediately after capture
-      console.log("Stopping camera after capture...");
-      releaseCamera();
-
       // Call the onCapture callback
       onCapture(imageData);
-      console.log("Image captured and camera stopped");
+      console.log("Image captured successfully");
     } else {
       onError({
         type: CameraErrorType.UNKNOWN_ERROR,
@@ -267,6 +313,10 @@ export default function CameraInterface({
           playsInline
           muted
           className="w-full h-full object-cover"
+          style={{
+            transform: "scaleX(1)",
+            WebkitTransform: "scaleX(1)",
+          }}
         />
 
         {/* Overlay guide */}

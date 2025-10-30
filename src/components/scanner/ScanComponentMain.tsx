@@ -365,17 +365,30 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
         {/* Camera Interface */}
         {(workflowState === "idle" ||
           workflowState === "camera_initializing" ||
-          workflowState === "camera_ready") && (
+          workflowState === "camera_ready" ||
+          workflowState === "processing" ||
+          workflowState === "matching") && (
           <>
             <CameraInterface
               key={cameraKey}
               onCapture={handleCapture}
               onError={handleCameraError}
-              isProcessing={false}
+              isProcessing={workflowState === "processing" || workflowState === "matching"}
             />
 
+            {/* Processing Overlay */}
+            {(workflowState === "processing" || workflowState === "matching") && (
+              <div className="mt-4">
+                <EnhancedProcessingState
+                  currentStep={currentProcessingStep}
+                  message={progressMessage}
+                  onCancel={handleCancelProcessing}
+                />
+              </div>
+            )}
+
             {/* Recent Scans */}
-            {recentScans.length > 0 && (
+            {recentScans.length > 0 && workflowState === "camera_ready" && (
               <div className="mt-6">
                 <RecentScans
                   scans={recentScans}
@@ -384,15 +397,6 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
               </div>
             )}
           </>
-        )}
-
-        {/* Processing State */}
-        {(workflowState === "processing" || workflowState === "matching") && (
-          <EnhancedProcessingState
-            currentStep={currentProcessingStep}
-            message={progressMessage}
-            onCancel={handleCancelProcessing}
-          />
         )}
 
         {/* Results State */}

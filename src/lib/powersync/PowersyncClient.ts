@@ -16,12 +16,19 @@ export class PowerSyncClient {
 
   private constructor() {
     // Only initialize if we're in the browser
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       console.warn("⚠️ PowerSync cannot be initialized on the server");
       return;
     }
 
     console.log("🔧 Creating PowerSync instance...");
+
+    // Check if SharedWorker is supported (not available on mobile browsers)
+    const supportsSharedWorker = typeof SharedWorker !== "undefined";
+
+    if (!supportsSharedWorker) {
+      console.log("📱 Mobile browser detected - disabling multi-tab support");
+    }
 
     // Initialize PowerSync database
     this.powerSyncDb = new PowerSyncDatabase({
@@ -31,7 +38,7 @@ export class PowerSyncClient {
       },
       schema: AppSchema,
       flags: {
-        enableMultiTabs: true,
+        enableMultiTabs: supportsSharedWorker,
       },
     });
 
@@ -46,7 +53,7 @@ export class PowerSyncClient {
 
   public static getInstance(): PowerSyncClient {
     // Only create instance in browser
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       // Return a dummy instance for SSR
       return {} as PowerSyncClient;
     }
@@ -59,7 +66,7 @@ export class PowerSyncClient {
 
   async init(): Promise<void> {
     // Skip initialization on server
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       console.warn("⚠️ Skipping PowerSync init on server");
       return;
     }
@@ -83,7 +90,6 @@ export class PowerSyncClient {
 
       this.isInitialized = true;
       console.log("✅ PowerSync fully initialized and syncing");
- 
     } catch (error) {
       console.error("❌ Failed to initialize PowerSync:", error);
       throw error;
@@ -124,11 +130,13 @@ export const getPowerSyncClient = (): PowerSyncClient => {
 };
 
 // For backward compatibility
-export const powerSyncClient = typeof window !== 'undefined' 
-  ? PowerSyncClient.getInstance() 
-  : {} as PowerSyncClient;
+export const powerSyncClient =
+  typeof window !== "undefined"
+    ? PowerSyncClient.getInstance()
+    : ({} as PowerSyncClient);
 
 // Export Kysely db for direct use (only in browser)
-export const db = typeof window !== 'undefined' 
-  ? powerSyncClient.db 
-  : {} as Kysely<PharmacyDatabase>;
+export const db =
+  typeof window !== "undefined"
+    ? powerSyncClient.db
+    : ({} as Kysely<PharmacyDatabase>);

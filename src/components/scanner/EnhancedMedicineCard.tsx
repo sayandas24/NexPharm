@@ -53,8 +53,6 @@ export default function EnhancedMedicineCard({
   const { medicine } = match;
   const [showAllBatches, setShowAllBatches] = useState(false);
 
-  console.log(match.medicine.medicine_image_url)
-
   return (
     <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-lg ">
       {/* Header with Gradient */}
