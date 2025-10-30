@@ -24,8 +24,11 @@ class StockCheckerService {
       return dateA - dateB;
     });
 
-    // Calculate total quantity
-    const totalQuantity = stockQuantity;
+    // Calculate total quantity from batches (sum of available_quantity)
+    const totalQuantity = availableBatches.reduce(
+      (sum, batch) => sum + batch.available_quantity,
+      0
+    );
 
     // Check if low stock
     const isLowStock = totalQuantity > 0 && totalQuantity <= reorderLevel;
@@ -75,18 +78,6 @@ class StockCheckerService {
       month: "short",
       day: "numeric",
     });
-  }
-
-  /**
-   * Get stock status badge variant
-   */
-  getStockStatusVariant(
-    totalQuantity: number,
-    isLowStock: boolean
-  ): "default" | "secondary" | "destructive" | "outline" {
-    if (totalQuantity === 0) return "destructive";
-    if (isLowStock) return "outline";
-    return "default";
   }
 
   /**

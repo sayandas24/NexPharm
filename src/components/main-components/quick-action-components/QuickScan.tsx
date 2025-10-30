@@ -49,7 +49,7 @@ export default function QuickScan() {
 
       {/* Scanner Dialog */}
       <Dialog open={scanOpen} onOpenChange={setScanOpen}>
-        <DialogContent className="min-w-[93vw] max-h-[93vh] overflow-y-auto p-0">
+        <DialogContent className="min-w-[73vw] min-h-[83vh] max-h-[95vh]  overflow-y-auto p-0  max-[900px]:min-w-[98vw]">
           <DialogHeader className="sr-only">
             <DialogTitle>Medicine Scanner</DialogTitle>
           </DialogHeader>

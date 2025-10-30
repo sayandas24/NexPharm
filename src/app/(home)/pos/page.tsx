@@ -4,7 +4,7 @@ import React from "react";
 
 export default function POSPage() {
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-[50rem]">
       {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Point of Sale</h1>
@@ -12,9 +12,9 @@ export default function POSPage() {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex gap-6 flex-wrap">
         {/* Billing Card */}
-        <Link href="/pos/billing">
+        <Link href="/pos/billing" className="flex-1 min-w-[20rem]">
           <div className="min-w-[20rem] relative rounded-xl border-2 h-[13rem] border-blue-600 overflow-hidden bg-blue-200 flex flex-col">
             {/* Upper white section */}
             <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">
@@ -44,7 +44,7 @@ export default function POSPage() {
         </Link>
 
         {/* Customers Card */}
-        <Link href="/pos/customers">
+        <Link href="/pos/customers" className="flex-1 min-w-[20rem]">
           <div className="min-w-[20rem] relative rounded-xl border-2 h-[13rem] border-green-600 overflow-hidden bg-green-200 flex flex-col">
             {/* Upper white section */}
             <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">

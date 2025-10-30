@@ -57,7 +57,7 @@ export function useShortages(pharmacyId: string | undefined) {
         }
         setError(null);
 
-        // fix Query 1: Get all pharmacy medicines with their reorder levels
+        // Query 1: Get all pharmacy medicines with their reorder levels
         const pharmacyMedicines = await db
           .selectFrom("pharmacy_medicines")
           .innerJoin(
@@ -106,9 +106,8 @@ export function useShortages(pharmacyId: string | undefined) {
           medicinesWithBatches.add(batch.medicineId);
         });
 
-        // Filter medicines: only those with batches
+        // Include ALL medicines below reorder level (with or without batches)
         const lowStockMedicines = pharmacyMedicines
-          .filter((med) => medicinesWithBatches.has(med.medicineId)) // Only medicines with batches
           .map((med) => ({
             ...med,
             currentStock: availableQuantityMap.get(med.medicineId) || 0,
@@ -205,9 +204,6 @@ export function useShortages(pharmacyId: string | undefined) {
         // Add expiring medicines (if not already in map)
         filteredExpiringBatches.forEach((batch) => {
           if (!shortageMap.has(batch.medicineId)) {
-            // Only add if medicine has batches
-            if (!medicinesWithBatches.has(batch.medicineId)) return;
-
             const currentStock =
               availableQuantityMap.get(batch.medicineId) || 0;
 

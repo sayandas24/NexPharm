@@ -4,7 +4,7 @@ import React from "react";
 
 export default function ReportsPage() {
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-[50rem]">
       {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Reports</h1>
@@ -12,10 +12,10 @@ export default function ReportsPage() {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex gap-6 flex-wrap">
         {/* Sales Reports Card */}
-        <Link href="/reports/sales">
-          <div className="min-w-[20rem] relative rounded-xl border-2 h-[13rem] border-blue-600 overflow-hidden bg-blue-200 flex flex-col">
+        <Link href="/reports/sales" className="flex-1 min-w-[20rem]">
+          <div className="relative rounded-xl border-2 h-[13rem] border-blue-600 overflow-hidden bg-blue-200 flex flex-col">
             {/* Upper white section */}
             <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">
               <div className="flex flex-col items-center space-y-2 rounded-xl">
@@ -45,14 +45,17 @@ export default function ReportsPage() {
         </Link>
 
         {/* Inventory Report Card */}
-        <Link href="/reports/inventory">
-          <div className="min-w-[20rem] relative rounded-xl border-2 h-[13rem] border-green-600 overflow-hidden bg-green-200 flex flex-col">
+        <Link href="/reports/inventory" className="flex-1 min-w-[20rem]">
+          <div className="relative rounded-xl border-2 h-[13rem] border-green-600 overflow-hidden bg-green-200 flex flex-col">
             {/* Upper white section */}
             <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">
               <div className="flex flex-col items-center space-y-2 rounded-xl">
                 {/* Icon */}
                 <div className="w-14 h-14 flex items-center justify-center rounded-full bg-green-100 group-hover:bg-green-200 transition-colors">
-                  <Package className="w-8 h-8 text-green-600" strokeWidth={2.5} />
+                  <Package
+                    className="w-8 h-8 text-green-600"
+                    strokeWidth={2.5}
+                  />
                 </div>
                 {/* Count and Label */}
                 <div className="text-center">

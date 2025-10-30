@@ -4,7 +4,7 @@ import React from "react";
 
 export default function Inventory() {
   return (
-    <div className="p-6">
+    <div className="p-6 ">
       {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Inventory</h1>
@@ -12,9 +12,9 @@ export default function Inventory() {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex gap-6 flex-wrap">
         {/* Medicine Lists Card */}
-        <Link href="/inventory/med-list">
+        <Link href="/inventory/med-list"  className="flex-1 min-w-[20rem]">
           <div className="min-w-[20rem] relative rounded-xl border-2 h-[13rem] border-blue-600 overflow-hidden bg-blue-200 flex flex-col">
             {/* Upper white section */}
             <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">
@@ -45,7 +45,7 @@ export default function Inventory() {
         </Link>
 
         {/* Medicine Groups Card */}
-        <Link href="/inventory/med-groups">
+        <Link href="/inventory/med-groups"  className="flex-1 min-w-[20rem]">
           <div className="min-w-[20rem] relative rounded-xl border-2 h-[13rem] border-green-600 overflow-hidden bg-green-200 flex flex-col">
             {/* Upper white section */}
             <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">
@@ -73,7 +73,7 @@ export default function Inventory() {
         </Link>
 
         {/* Medicine Shortage Card */}
-        <Link href="/inventory/med-shortage">
+        <Link href="/inventory/med-shortage"  className="flex-1 min-w-[20rem]">
           <div className="min-w-[20rem] relative rounded-xl border-2 h-[13rem] border-red-600 overflow-hidden bg-red-200 flex flex-col">
             {/* Upper white section */}
             <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">
@@ -104,7 +104,7 @@ export default function Inventory() {
         </Link>
 
         {/* Alerts Card */}
-        <Link href="/inventory/alerts">
+        <Link href="/inventory/alerts"  className="flex-1 min-w-[20rem]">
           <div className="min-w-[20rem] relative rounded-xl border-2 h-[13rem] border-orange-600 overflow-hidden bg-orange-200 flex flex-col">
             {/* Upper white section */}
             <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">

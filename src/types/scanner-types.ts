@@ -99,6 +99,40 @@ export interface ScanSession {
   pharmacyId: string;
 }
 
+// Supplier Information
+export interface SupplierInfo {
+  id: string;
+  name: string;
+  contactPerson: string | null;
+  phone: string;
+  email: string | null;
+  address: string | null;
+}
+
+// Sales Statistics
+export interface SalesStatistics {
+  unitsSoldLast30Days: number;
+  averageDailySales: number;
+  estimatedDaysUntilStockOut: number | null;
+  lastSaleDate: Date | null;
+}
+
+// Recent Scan
+export interface RecentScan {
+  id: string;
+  medicine: PharmacyMedicineWithDetails;
+  timestamp: Date;
+  stockStatus: "in_stock" | "low_stock" | "out_of_stock";
+}
+
+// Enhanced Scan Session
+export interface EnhancedScanSession {
+  sessionId: string;
+  startTime: Date;
+  recentScans: RecentScan[];
+  pharmacyId: string;
+}
+
 // Workflow State
 export type ScanWorkflowState =
   | "idle"

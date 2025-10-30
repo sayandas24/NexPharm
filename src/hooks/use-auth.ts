@@ -221,19 +221,22 @@ export default function useAuth() {
     }
   };
 
-  // ============ Switch Pharmacy ============
+  //fix ============ Switch Pharmacy ============
   const switchPharmacy = async (pharmacyId: string) => {
     try {
       const pharmacy = pharmacies.find((p) => p.pharmacy_id === pharmacyId);
       if (!pharmacy) throw new Error("Pharmacy not found");
 
+      console.log(pharmacyId,"pharmacyId", pharmacy)
+
       setCurrentPharmacy(pharmacy.pharmacies);
 
       if (currentUser) {
-        await supabaseConnector.client
+       const res =  await supabaseConnector.client
           .from("profiles")
           .update({ default_pharmacy_id: pharmacyId })
           .eq("id", currentUser.id);
+          console.log(res,"res")
       }
 
       console.log("✅ Switched to pharmacy:", pharmacy.pharmacies.name);

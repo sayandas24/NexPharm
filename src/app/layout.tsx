@@ -33,22 +33,21 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SidebarProvider>
-          <AppSidebar />
+        <PowerSyncProvider>
+          <SidebarProvider>
+            <AppSidebar />
 
-          <SidebarInset>
-            <PowerSyncProvider>
+            <SidebarInset>
               <div>
-
                 <Header />
                 <ConnectionStatus />
                 {children}
               </div>
 
-            </PowerSyncProvider>
-            <Toaster position="top-right" />
-          </SidebarInset>
-        </SidebarProvider>
+              <Toaster position="top-right" />
+            </SidebarInset>
+          </SidebarProvider>
+        </PowerSyncProvider>
       </body>
     </html>
   );

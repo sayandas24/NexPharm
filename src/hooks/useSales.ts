@@ -431,6 +431,47 @@ export default function useSales(pharmacyId: string) {
     return result;
   };
 
+  const fetchSalesForMedicine = async (
+    medicineName: string,
+    currentPharmacy: any,
+    stock: any
+  ) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const salesData = await db
+      .selectFrom("sales")
+      .innerJoin("sale_items", "sale_items.sale_id", "sales.id")
+      .select((eb) => [
+        eb.fn.sum<number>("sale_items.quantity").as("total_quantity"),
+        eb.fn.max("sales.created_at").as("last_sale_date"),
+      ])
+      .where("sales.pharmacy_id", "=", currentPharmacy?.id)
+      .where("sale_items.medicine_name", "=", medicineName)
+      .where("sales.created_at", ">=", startOfMonth.toISOString())
+      .executeTakeFirst();
+
+    const unitsSold = Number(salesData?.total_quantity || 0);
+    const daysInMonth = Math.ceil(
+      (now.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const averageDailySales = daysInMonth > 0 ? unitsSold / daysInMonth : 0;
+    const estimatedDaysUntilStockOut =
+      averageDailySales > 0
+        ? Math.floor(stock.totalQuantity / averageDailySales)
+        : null;
+
+    return {
+      unitsSold,
+      averageDailySales: Math.round(averageDailySales * 100) / 100,
+      estimatedDaysUntilStockOut,
+      salesData,
+      lastSaleDate: salesData?.last_sale_date
+        ? new Date(salesData.last_sale_date)
+        : null,
+    };
+  };
+
   return {
     fetchSalesAnalytics,
     fetchSalesSummary,
@@ -439,5 +480,7 @@ export default function useSales(pharmacyId: string) {
     fetchTopCustomers,
     fetchCustomerTopMedicines,
     fetchTopMedicines,
+
+    fetchSalesForMedicine,
   };
 }

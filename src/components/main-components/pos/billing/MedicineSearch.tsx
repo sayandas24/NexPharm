@@ -24,7 +24,6 @@ interface MedicineSearchProps {
     pharmacyId: string
   ) => Promise<PharmacyMedicineWithDetails[]>;
 }
-// fix the search not working properly, it only fetches one medicine don't know why
 export function MedicineSearch({
   pharmacyId,
   onMedicineSelect,

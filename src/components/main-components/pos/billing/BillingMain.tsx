@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePOS, CustomerData } from "@/hooks/usePOS";
 import { CustomerForm } from "./CustomerForm";
 import { MedicineSearch } from "./MedicineSearch";
@@ -14,9 +14,14 @@ import { useRouter } from "next/navigation";
 interface BillingMainProps {
   pharmacyId: string;
   userId: string;
+  preSelectedMedicine?: any; // Add this optional prop
 }
 
-export function BillingMain({ pharmacyId, userId }: BillingMainProps) {
+export function BillingMain({
+  pharmacyId,
+  userId,
+  preSelectedMedicine,
+}: BillingMainProps) {
   const { searchMedicinesByName, fetchBatchesForMedicine } =
     useMedicines(pharmacyId);
 
@@ -45,13 +50,17 @@ export function BillingMain({ pharmacyId, userId }: BillingMainProps) {
     toast.success(`${customerData.name} has been added to the bill`);
   };
 
+ useEffect(() => {
+    if (preSelectedMedicine) {
+      handleMedicineSelect(preSelectedMedicine);
+    }
+  }, [preSelectedMedicine]);
+
   const handleMedicineSelect = (medicine: any) => {
-    console.log(medicine, "medicine");
     setSelectedMedicine(medicine);
   };
 
   const handleBatchSelect = (batch: any, quantity: number) => {
-    console.log(batch, "batch");
     addToCart(batch, selectedMedicine, quantity);
     setSelectedMedicine(null);
     toast.success(`${selectedMedicine.name} added to cart`);
@@ -93,17 +102,21 @@ export function BillingMain({ pharmacyId, userId }: BillingMainProps) {
   return (
     <div className="container mx-auto p-6">
       <div className="flex items-center text-sm text-gray-500 mb-5">
-        <button onClick={() => router.push("/")} className="hover:text-gray-700">
+        <button
+          onClick={() => router.push("/")}
+          className="hover:text-gray-700"
+        >
           Dashboard
         </button>
         <span className="mx-2">›</span>
-        <button onClick={() => router.push("/pos")} className="hover:text-gray-700">
+        <button
+          onClick={() => router.push("/pos")}
+          className="hover:text-gray-700"
+        >
           Customer Management
         </button>
         <span className="mx-2">›</span>
-        <span className="text-gray-900 font-semibold">
-          Billing
-        </span>
+        <span className="text-gray-900 font-semibold">Billing</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
