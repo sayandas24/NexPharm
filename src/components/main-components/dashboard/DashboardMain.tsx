@@ -12,8 +12,6 @@ export function DashboardMain() {
   const { metrics, loading, error, selectedPeriod, setSelectedPeriod } =
     useDashboard(currentPharmacy?.id);
 
-  console.log(metrics, "metrics");
-
   // Handle no pharmacy selected
   if (!currentPharmacy) {
     return (

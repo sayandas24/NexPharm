@@ -1,5 +1,4 @@
 "use client";
-
 import { MoveDown, MoveUp, RefreshCcw, Wifi, WifiOff } from "lucide-react";
 import {
   usePowerSync,
@@ -26,57 +25,56 @@ export default function ConnectionStatus() {
   };
 
   return (
-    <div className="w-full">
-      <div className="w-10 fixed m-2 right-[25rem] bottom-0 flex items-center gap-2 text-sm ">
-        <div className="flex bg-zinc-700 rounded-lg p-3 items-center ">
-          <div className="flex">
-            <MoveUp
-              color={status?.dataFlowStatus?.uploading ? "blue" : "green"}
-            />
-            <MoveDown
-              color={status?.dataFlowStatus?.downloading ? "blue" : "green"}
-            />
-          </div>
-
-          <div className="flex items-center gap-2 text-sm">
-            {isConnected ? (
-              <>
-                <Wifi size={16} className="text-green-400" />
-                <span className="text-green-400">Online</span>
-              </>
-            ) : (
-              <>
-                <WifiOff size={16} className="text-orange-400" />
-                <span className="text-orange-400">Offline</span>
-              </>
-            )}
-          </div>
-
-          <div className="ml-2">
-            <RefreshCcw
-              className={`${isConnecting && "animate-spin"} text-amber-100`}
-              onClick={() => refreshConnection()}
-              size={18}
-            />
-          </div>
-
-          <div className="flex">
-            <button
-              onClick={connect}
-              disabled={isConnecting || isConnected}
-              className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Connect
-            </button>
-            <button
-              onClick={disconnect}
-              disabled={isConnecting || !isConnected}
-              className="text-white ml-2 border border-zinc-700 bg-zinc-800 rounded-lg p-5 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Disconnect
-            </button>
-          </div>
+    <div className="w-full px-3 py-2">
+      <div className="flex items-center justify-between bg-gray-200 rounded-lg px-3 py-2">
+        {/* Data Flow Icons */}
+        <div className="flex items-center gap-0.5">
+          <MoveUp
+            size={12}
+            className={status?.dataFlowStatus?.uploading ? "text-blue-500" : "text-green-500"}
+          />
+          <MoveDown
+            size={12}
+            className={status?.dataFlowStatus?.downloading ? "text-blue-500" : "text-green-500"}
+          />
         </div>
+
+        {/* Connection Status */}
+        <div className="flex items-center gap-1 flex-1 ml-1">
+          {isConnected ? (
+            <>
+              <Wifi size={12} className="text-green-500" />
+              <span className="text-green-600 text-xs font-medium">Online</span>
+            </>
+          ) : (
+            <>
+              <WifiOff size={12} className="text-orange-500" />
+              <span className="text-orange-600 text-xs font-medium">Offline</span>
+            </>
+          )}
+        </div>
+
+        {/* Refresh Button */}
+        <button
+          onClick={refreshConnection}
+          disabled={isConnecting}
+          className="p-1 hover:bg-gray-300 rounded transition-colors disabled:opacity-50 mr-1"
+          title="Refresh"
+        >
+          <RefreshCcw
+            className={`${isConnecting && "animate-spin"} text-gray-700`}
+            size={12}
+          />
+        </button>
+
+        {/* Connect/Disconnect Button */}
+        <button
+          onClick={isConnected ? disconnect : refreshConnection}
+          disabled={isConnecting}
+          className="text-gray-700 text-xs px-2 py-1 bg-gray-300 rounded-sm hover:bg-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+        >
+          {isConnected ? "Disconnect" : "Connect"}
+        </button>
       </div>
     </div>
   );

@@ -40,7 +40,6 @@ export default function RootLayout({
             <SidebarInset>
               <div>
                 <Header />
-                <ConnectionStatus />
                 {children}
               </div>
 

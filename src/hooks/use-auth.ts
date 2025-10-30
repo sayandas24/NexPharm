@@ -2,7 +2,7 @@
 "use client";
 
 import { usePowerSync } from "@/lib/powersync/PowersyncProvider";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
 // ============ Types ============
@@ -39,6 +39,22 @@ interface PharmacyMember {
   pharmacies: Pharmacy;
 }
 
+// ============ Pharmacy Switch Types ============
+export enum SwitchStage {
+  VALIDATING = "validating",
+  DISCONNECTING = "disconnecting",
+  CLEARING = "clearing",
+  UPDATING_PROFILE = "updating_profile",
+  RECONNECTING = "reconnecting",
+  SYNCING = "syncing",
+  COMPLETE = "complete",
+}
+
+export interface SwitchPharmacyOptions {
+  onProgress?: (stage: SwitchStage) => void;
+  onError?: (error: Error, stage: SwitchStage) => void;
+}
+
 // ============ Hook ============
 export default function useAuth() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -48,46 +64,56 @@ export default function useAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { supabaseConnector } = usePowerSync();
+  const {
+    supabaseConnector,
+    disconnect,
+    clearDatabase,
+    reconnect,
+    waitForSync,
+  } = usePowerSync();
 
   // ============ Internal Helper: Get User Data ============
-  const fetchUserData = async (user: User) => {
-    try {
-      // Get profile
-      const { data: userProfile } = await supabaseConnector.client
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+  const fetchUserData = useCallback(
+    async (user: User) => {
+      try {
+        // Get profile
+        const { data: userProfile } = await supabaseConnector.client
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
 
-      setProfile(userProfile);
+        setProfile(userProfile);
 
-      // Get user's pharmacies
-      const { data: userPharmacies } = await supabaseConnector.client
-        .from("pharmacy_members")
-        .select(`*, pharmacies:pharmacy_id (*)`)
-        .eq("user_id", user.id)
-        .eq("is_active", true);
+        // Get user's pharmacies
+        const { data: userPharmacies } = await supabaseConnector.client
+          .from("pharmacy_members")
+          .select(`*, pharmacies:pharmacy_id (*)`)
+          .eq("user_id", user.id)
+          .eq("is_active", true);
 
-      setPharmacies(userPharmacies || []);
+        setPharmacies(userPharmacies || []);
 
-      // Set current pharmacy
-      if (userProfile?.default_pharmacy_id && userPharmacies) {
-        const defaultPharmacy = userPharmacies.find(
-          (p) => p.pharmacy_id === userProfile.default_pharmacy_id
-        );
-        setCurrentPharmacy(defaultPharmacy?.pharmacies || null);
-      } else if (userPharmacies && userPharmacies.length > 0) {
-        setCurrentPharmacy(userPharmacies[0].pharmacies);
+        // Set current pharmacy
+        if (userProfile?.default_pharmacy_id && userPharmacies) {
+          const defaultPharmacy = userPharmacies.find(
+            (p) => p.pharmacy_id === userProfile.default_pharmacy_id
+          );
+          setCurrentPharmacy(defaultPharmacy?.pharmacies || null);
+        } else if (userPharmacies && userPharmacies.length > 0) {
+          setCurrentPharmacy(userPharmacies[0].pharmacies);
+        }
+      } catch (err: any) {
+        console.error("Error fetching user data:", err);
+        setError(err.message);
       }
-    } catch (err: any) {
-      console.error("Error fetching user data:", err);
-      setError(err.message);
-    }
-  };
+    },
+    [supabaseConnector, setProfile, setPharmacies, setCurrentPharmacy]
+  );
 
   // ============ Get Current User ============
-  const getUser = async () => {
+
+  const getUser = useCallback(async () => {
     try {
       setLoading(true);
       const {
@@ -109,8 +135,7 @@ export default function useAuth() {
     } finally {
       setLoading(false);
     }
-  };
-
+  }, [supabaseConnector, fetchUserData]);
   // ============ Sign In ============
   const signInWithPassword = async (email: string, password: string) => {
     try {
@@ -173,25 +198,29 @@ export default function useAuth() {
       if (data.user) {
         console.log("✅ User created:", data, pharmacyId, email, fullName);
         // Create profile
-        const response = await supabaseConnector.client.from("profiles").insert({
-          id: data.user.id,
-          full_name: fullName,
-          email: email,
-          avatar_url: null,
-          default_pharmacy_id: pharmacyId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+        const response = await supabaseConnector.client
+          .from("profiles")
+          .insert({
+            id: data.user.id,
+            full_name: fullName,
+            email: email,
+            avatar_url: null,
+            default_pharmacy_id: pharmacyId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
         console.log("✅ Profile created:", response);
 
         // Create pharmacy member
-        const memberRes = await supabaseConnector.client.from("pharmacy_members").insert({
-          pharmacy_id: pharmacyId,
-          user_id: data.user.id,
-          role: role,
-          is_active: true,
-          joined_at: new Date().toISOString(),
-        });
+        const memberRes = await supabaseConnector.client
+          .from("pharmacy_members")
+          .insert({
+            pharmacy_id: pharmacyId,
+            user_id: data.user.id,
+            role: role,
+            is_active: true,
+            joined_at: new Date().toISOString(),
+          });
         console.log("✅ Pharmacy member created:", memberRes);
 
         console.log("✅ Sign up successful!");
@@ -221,27 +250,170 @@ export default function useAuth() {
     }
   };
 
-  //fix ============ Switch Pharmacy ============
-  const switchPharmacy = async (pharmacyId: string) => {
+  // ============ Switch Pharmacy ============
+  const switchPharmacy = async (
+    pharmacyId: string,
+    options?: SwitchPharmacyOptions
+  ) => {
+    const startTime = Date.now();
+    const previousPharmacyId = currentPharmacy?.id || null;
+    let currentStage: SwitchStage = SwitchStage.VALIDATING;
+
     try {
-      const pharmacy = pharmacies.find((p) => p.pharmacy_id === pharmacyId);
-      if (!pharmacy) throw new Error("Pharmacy not found");
+      // ===== VALIDATION PHASE =====
+      currentStage = SwitchStage.VALIDATING;
+      console.log("🔄 Starting pharmacy switch to:", pharmacyId);
+      options?.onProgress?.(currentStage);
 
-      console.log(pharmacyId,"pharmacyId", pharmacy)
-
-      setCurrentPharmacy(pharmacy.pharmacies);
-
-      if (currentUser) {
-       const res =  await supabaseConnector.client
-          .from("profiles")
-          .update({ default_pharmacy_id: pharmacyId })
-          .eq("id", currentUser.id);
-          console.log(res,"res")
+      // Check if pharmacy is different from current
+      if (currentPharmacy?.id === pharmacyId) {
+        console.log("ℹ️ Already on this pharmacy");
+        return;
       }
 
-      console.log("✅ Switched to pharmacy:", pharmacy.pharmacies.name);
+      // Verify pharmacy exists in user's list
+      const pharmacy = pharmacies.find((p) => p.pharmacy_id === pharmacyId);
+      if (!pharmacy) {
+        const error = new Error("Pharmacy not found in your pharmacy list");
+        options?.onError?.(error, currentStage);
+        throw error;
+      }
+
+      // Verify user has active membership
+      if (!pharmacy.is_active) {
+        const error = new Error(
+          "Your membership to this pharmacy is not active"
+        );
+        options?.onError?.(error, currentStage);
+        throw error;
+      }
+
+      console.log("✅ Validation passed:", pharmacy.pharmacies.name);
+
+      // ===== DISCONNECTION PHASE =====
+      currentStage = SwitchStage.DISCONNECTING;
+      options?.onProgress?.(currentStage);
+      console.log("🔌 Disconnecting from PowerSync...");
+
+      try {
+        await disconnect();
+        console.log("✅ Disconnected successfully");
+      } catch (err: any) {
+        console.warn("⚠️ Disconnection warning:", err);
+        // Continue anyway - might already be disconnected
+      }
+
+      // ===== DATABASE CLEAR PHASE =====
+      currentStage = SwitchStage.CLEARING;
+      options?.onProgress?.(currentStage);
+      console.log("🗑️ Clearing local database...");
+
+      try {
+        await clearDatabase();
+        console.log("✅ Database cleared successfully");
+      } catch (err: any) {
+        console.error("❌ Failed to clear database:", err);
+        const error = new Error("Failed to clear local database");
+        options?.onError?.(error, currentStage);
+        throw error;
+      }
+
+      // ===== PROFILE UPDATE PHASE =====
+      currentStage = SwitchStage.UPDATING_PROFILE;
+      options?.onProgress?.(currentStage);
+      console.log("💾 Updating user profile...");
+
+      // Update local state first (optimistic update)
+      setCurrentPharmacy(pharmacy.pharmacies);
+
+      // Update profile in Supabase
+      if (currentUser) {
+        try {
+          const { error: updateError } = await supabaseConnector.client
+            .from("profiles")
+            .update({ default_pharmacy_id: pharmacyId })
+            .eq("id", currentUser.id);
+
+          if (updateError) {
+            console.error("⚠️ Profile update error:", updateError);
+            // Don't throw - continue with local switch
+          } else {
+            console.log("✅ Profile updated successfully");
+          }
+        } catch (err: any) {
+          console.error("⚠️ Profile update failed:", err);
+          // Don't throw - continue with local switch
+        }
+      }
+
+      // ===== RECONNECTION PHASE =====
+      currentStage = SwitchStage.RECONNECTING;
+      options?.onProgress?.(currentStage);
+      console.log("🔗 Reconnecting to PowerSync...");
+
+      try {
+        await reconnect();
+        console.log("✅ Reconnection initiated");
+      } catch (err: any) {
+        console.error("❌ Reconnection failed:", err);
+        const error = new Error("Failed to reconnect to sync service");
+        options?.onError?.(error, currentStage);
+        throw error;
+      }
+
+      // ===== SYNC WAIT PHASE =====
+      currentStage = SwitchStage.SYNCING;
+      options?.onProgress?.(currentStage);
+      console.log("⏳ Waiting for initial sync...");
+
+      const syncSuccess = await waitForSync(30000);
+
+      if (!syncSuccess) {
+        console.warn("⚠️ Sync timeout - continuing in background");
+        // Don't throw - allow user to proceed
+      } else {
+        console.log("✅ Initial sync completed");
+      }
+
+      // ===== COMPLETE =====
+      currentStage = SwitchStage.COMPLETE;
+      options?.onProgress?.(currentStage);
+      const duration = Date.now() - startTime;
+      console.log(
+        `✅ Pharmacy switch complete in ${duration}ms:`,
+        pharmacy.pharmacies.name
+      );
     } catch (err: any) {
+      const duration = Date.now() - startTime;
+      console.error(
+        `❌ Pharmacy switch failed at stage "${currentStage}" after ${duration}ms:`,
+        err
+      );
       setError(err.message);
+
+      // Call error callback with stage information
+      if (options?.onError && !err.callbackInvoked) {
+        err.callbackInvoked = true; // Prevent double callback
+        options.onError(err, currentStage);
+      }
+
+      // Attempt rollback for critical failures
+      if (
+        currentStage === SwitchStage.RECONNECTING ||
+        currentStage === SwitchStage.SYNCING
+      ) {
+        if (previousPharmacyId && previousPharmacyId !== pharmacyId) {
+          console.log("🔄 Attempting rollback to previous pharmacy...");
+          const previousPharmacy = pharmacies.find(
+            (p) => p.pharmacy_id === previousPharmacyId
+          );
+          if (previousPharmacy) {
+            setCurrentPharmacy(previousPharmacy.pharmacies);
+            console.log("✅ Rolled back to:", previousPharmacy.pharmacies.name);
+          }
+        }
+      }
+
       throw err;
     }
   };
@@ -329,7 +501,7 @@ export default function useAuth() {
       );
 
     return () => authListener.subscription.unsubscribe();
-  }, []);
+  }, [getUser, supabaseConnector]);
 
   // ============ Return ============
   return {

@@ -152,7 +152,7 @@ export default function AddBatchForm({ onSuccess }: AddBatchFormProps) {
         .selectFrom("medicine_batches")
         .selectAll()
         .where("batch_number", "=", batchNumber.toUpperCase())
-        .where("pharmacy_id", "=", currentPharmacy?.id || "")
+        // .where("pharmacy_id", "=", currentPharmacy?.id || "")
         .executeTakeFirst();
 
       setIsCheckingBatchNumber(false);

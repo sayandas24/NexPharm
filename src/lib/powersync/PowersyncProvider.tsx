@@ -29,6 +29,8 @@ interface PowerSyncContextType {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   reconnect: () => Promise<void>;
+  clearDatabase: () => Promise<void>;
+  waitForSync: (timeoutMs?: number) => Promise<boolean>;
 }
 
 interface SyncStatus {
@@ -215,6 +217,60 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
+  // Clear database function
+  const clearDatabase = useCallback(async () => {
+    if (!powerSyncClient.powerSyncDb) {
+      console.error("❌ PowerSync database not initialized");
+      throw new Error("PowerSync database not initialized");
+    }
+
+    try {
+      console.log("🗑️ Clearing local database...");
+
+      // Disconnect if connected
+      if (powerSyncClient.powerSyncDb.connected) {
+        console.log("🔌 Disconnecting before clear...");
+        await powerSyncClient.powerSyncDb.disconnect();
+        // Wait for clean disconnect
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
+      // Clear and close database
+      await powerSyncClient.powerSyncDb.disconnectAndClear();
+      await powerSyncClient.powerSyncDb.close();
+
+      console.log("✅ Database cleared successfully");
+    } catch (err) {
+      console.error("❌ Failed to clear database:", err);
+      throw err;
+    }
+  }, []);
+
+  // Wait for sync function
+  const waitForSync = useCallback(
+    async (timeoutMs: number = 30000): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const startTime = Date.now();
+
+        const checkSync = () => {
+          // Check if connected and has synced at least once
+          if (syncStatus.connected && syncStatus.lastSyncedAt) {
+            console.log("✅ Sync completed successfully");
+            resolve(true);
+          } else if (Date.now() - startTime > timeoutMs) {
+            console.warn("⚠️ Sync timeout reached");
+            resolve(false);
+          } else {
+            setTimeout(checkSync, 500);
+          }
+        };
+
+        checkSync();
+      });
+    },
+    [syncStatus]
+  );
+
   // Context value
   const value: PowerSyncContextType = {
     powerSyncDb: powerSyncClient.powerSyncDb,
@@ -228,6 +284,8 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
     connect,
     disconnect,
     reconnect,
+    clearDatabase,
+    waitForSync,
   };
 
   return (

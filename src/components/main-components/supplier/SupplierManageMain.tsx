@@ -71,10 +71,10 @@ export default function SupplierManageMain() {
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="text-sm text-muted-foreground">
-                  Last ordered 12 sept 2025
+                  {/* Last ordered 12 sept 2025 */}
                 </div>
-                <Link href={`/suppliers/${supplier.id}`}>
-                  <Button variant="ghost" size="sm">
+                <Link href={`/suppliers/${supplier.id}`} className="cursor-pointer">
+                  <Button variant="ghost" size="sm" className="cursor-pointer">
                     More
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
@@ -88,10 +88,11 @@ export default function SupplierManageMain() {
                   </p>
                 </div>
                 <div className="text-right">
+                  {/* Todo calculate the total bill */}
                   <div className="text-sm text-muted-foreground">
                     Total Bill
                   </div>
-                  <div className="text-lg font-semibold">₹12,000</div>
+                  {/* <div className="text-lg font-semibold">Null</div> */}
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   Home,
   Package,
@@ -12,11 +12,11 @@ import {
   LifeBuoy,
   Send,
   Settings2,
-} from "lucide-react"
+} from "lucide-react";
 
-import { NavMain } from "@/components/shadcn-sidebar/nav-main"
-import { NavSecondary } from "@/components/shadcn-sidebar/nav-secondary"
-import { NavUser } from "@/components/shadcn-sidebar/nav-user"
+import { NavMain } from "@/components/shadcn-sidebar/nav-main";
+import { NavSecondary } from "@/components/shadcn-sidebar/nav-secondary";
+import { NavUser } from "@/components/shadcn-sidebar/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -25,8 +25,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { PharmacySwitcher } from "./PharmacySwitcher"
+} from "@/components/ui/sidebar";
+import { PharmacySwitcher } from "./PharmacySwitcher";
+import ConnectionStatus from "../ConnectionStatus";
 
 const data = {
   user: {
@@ -131,7 +132,7 @@ const data = {
       icon: Send,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -140,18 +141,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <PharmacySwitcher versions={["v1.0", "v1.1"]} defaultVersion="v1.0" />
+              <PharmacySwitcher
+                versions={["v1.0", "v1.1"]}
+                defaultVersion="v1.0"
+              />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <div className="mt-auto">
+          <ConnectionStatus />
+        </div>
+        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
