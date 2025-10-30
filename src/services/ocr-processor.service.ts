@@ -4,11 +4,32 @@ import { createWorker, Worker } from "tesseract.js";
 import { OCRResult, OCRErrorType } from "@/types/scanner-types";
 import { preprocessImageForOCR } from "@/utils/image-processing.utils";
 import { cleanOCRText } from "@/utils/text-matching.utils";
+import { retryWithBackoff, isOnline } from "@/utils/network-utils";
+import {
+  handleTesseractError,
+  logProductionError,
+} from "@/utils/scanner-error-handler";
+
+// CDN URLs for Tesseract.js worker files
+const PRIMARY_CDN = {
+  workerPath:
+    "https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/worker.min.js",
+  langPath: "https://cdn.jsdelivr.net/npm/tesseract.js-data@1.0.0/",
+  corePath:
+    "https://cdn.jsdelivr.net/npm/tesseract.js-core@6.0.1/tesseract-core.wasm.js",
+};
+
+const FALLBACK_CDN = {
+  workerPath: "https://unpkg.com/tesseract.js@6.0.1/dist/worker.min.js",
+  langPath: "https://unpkg.com/tesseract.js-data@1.0.0/",
+  corePath: "https://unpkg.com/tesseract.js-core@6.0.1/tesseract-core.wasm.js",
+};
 
 class OCRProcessorService {
   private worker: Worker | null = null;
   private isInitialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
+  private currentCDN: typeof PRIMARY_CDN = PRIMARY_CDN;
 
   /**
    * Initialize Tesseract worker
@@ -32,23 +53,83 @@ class OCRProcessorService {
     try {
       console.log("Initializing Tesseract worker...");
 
-      // Create worker
-      this.worker = await createWorker("eng", 1, {
-        logger: (m) => {
-          // Log progress for debugging
-          if (m.status === "recognizing text") {
-            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+      // Check if online
+      if (!isOnline()) {
+        throw new Error("Device is offline");
+      }
+
+      // Try to initialize with retry logic
+      await retryWithBackoff(
+        async () => {
+          try {
+            // Create worker with CDN configuration
+            this.worker = await createWorker("eng", 1, {
+              workerPath: this.currentCDN.workerPath,
+              langPath: this.currentCDN.langPath,
+              corePath: this.currentCDN.corePath,
+              logger: (m) => {
+                // Log progress for debugging
+                if (m.status === "recognizing text") {
+                  console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+                }
+              },
+            });
+
+            console.log(
+              "Tesseract worker initialized successfully with CDN:",
+              this.currentCDN.workerPath
+            );
+          } catch (error) {
+            // If primary CDN fails, try fallback
+            if (this.currentCDN === PRIMARY_CDN) {
+              console.warn("Primary CDN failed, trying fallback CDN...");
+              this.currentCDN = FALLBACK_CDN;
+
+              // Try with fallback CDN
+              this.worker = await createWorker("eng", 1, {
+                workerPath: this.currentCDN.workerPath,
+                langPath: this.currentCDN.langPath,
+                corePath: this.currentCDN.corePath,
+                logger: (m) => {
+                  if (m.status === "recognizing text") {
+                    console.log(
+                      `OCR Progress: ${Math.round(m.progress * 100)}%`
+                    );
+                  }
+                },
+              });
+
+              console.log("Tesseract worker initialized with fallback CDN");
+            } else {
+              throw error;
+            }
           }
+        },
+        3,
+        1000
+      );
+
+      this.isInitialized = true;
+      console.log("Tesseract worker ready");
+    } catch (error) {
+      console.error("Failed to initialize Tesseract worker:", error);
+
+      // Log production error
+      logProductionError(error, {
+        component: "OCRProcessorService",
+        action: "initialize",
+        additionalInfo: {
+          cdnUsed: this.currentCDN.workerPath,
+          online: isOnline(),
         },
       });
 
-      this.isInitialized = true;
-      console.log("Tesseract worker initialized successfully");
-    } catch (error) {
-      console.error("Failed to initialize Tesseract worker:", error);
       this.isInitialized = false;
       this.worker = null;
-      throw new Error(OCRErrorType.INITIALIZATION_FAILED);
+
+      // Handle and throw enhanced error
+      const enhancedError = handleTesseractError(error);
+      throw new Error(enhancedError.userMessage);
     } finally {
       this.initializationPromise = null;
     }
@@ -64,19 +145,38 @@ class OCRProcessorService {
     }
 
     if (!this.worker) {
-      throw new Error(OCRErrorType.INITIALIZATION_FAILED);
+      const error = new Error(OCRErrorType.INITIALIZATION_FAILED);
+      logProductionError(error, {
+        component: "OCRProcessorService",
+        action: "processImage",
+        additionalInfo: {
+          workerState: "not_initialized",
+        },
+      });
+      throw error;
     }
 
     try {
       console.log("Pre-processing image for OCR...");
+
+      // Check if online before processing
+      if (!isOnline()) {
+        throw new Error("Device is offline");
+      }
+
       // Pre-process image for better accuracy
       const processedImage = await preprocessImageForOCR(imageData);
 
       console.log("Running OCR...");
+
+      // Determine timeout based on device type
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const timeout = isMobile ? 8000 : 10000;
+
       // Run OCR with timeout
       const result = await Promise.race([
         this.worker.recognize(processedImage),
-        this._timeout(10000), // 10 second timeout
+        this._timeout(timeout),
       ]);
 
       if (!result) {
@@ -124,18 +224,36 @@ class OCRProcessorService {
     } catch (error) {
       console.error("OCR processing error:", error);
 
+      // Log production error with context
+      logProductionError(error, {
+        component: "OCRProcessorService",
+        action: "processImage",
+        additionalInfo: {
+          online: isOnline(),
+          cdnUsed: this.currentCDN.workerPath,
+        },
+      });
+
       const err = error as Error;
-      
+
       // Handle specific error types
       if (err.message === OCRErrorType.NO_TEXT_DETECTED) {
-        throw error;
+        throw new Error("no_text_detected");
       }
 
       if (err.message === "timeout") {
-        throw new Error(OCRErrorType.PROCESSING_FAILED);
+        const enhancedError = handleTesseractError(new Error("timeout"));
+        throw new Error(enhancedError.type);
       }
 
-      throw new Error(OCRErrorType.PROCESSING_FAILED);
+      if (err.message === "Device is offline") {
+        const enhancedError = handleTesseractError(err);
+        throw new Error(enhancedError.type);
+      }
+
+      // Map to enhanced error
+      const enhancedError = handleTesseractError(error);
+      throw new Error(enhancedError.type);
     }
   }
 

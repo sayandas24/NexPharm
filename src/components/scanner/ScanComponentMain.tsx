@@ -19,6 +19,8 @@ import {
   RotateCcw,
   Search,
   ChevronRight,
+  WifiOff,
+  Wifi,
 } from "lucide-react";
 import { ocrProcessor } from "@/services/ocr-processor.service";
 import { medicineMatchService } from "@/services/medicine-match.service";
@@ -79,6 +81,9 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
   // Error state
   const [error, setError] = useState<string | null>(null);
 
+  // Network state
+  const [isOnline, setIsOnline] = useState(true);
+
   // Initialize OCR worker on mount
   useEffect(() => {
     const initOCR = async () => {
@@ -96,11 +101,38 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
 
     initOCR();
 
+    // Setup online/offline listeners
+    const handleOnline = () => {
+      console.log("Connection restored");
+      setIsOnline(true);
+      toast.success("Connection restored");
+      
+      // Auto-retry initialization if it failed due to offline
+      if (workflowState === "error" && !ocrProcessor.isReady()) {
+        initOCR();
+      }
+    };
+
+    const handleOffline = () => {
+      console.log("Connection lost");
+      setIsOnline(false);
+      toast.error("You are offline");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Check initial online status
+    setIsOnline(navigator.onLine);
+
     // Cleanup on unmount
     return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
       ocrProcessor.terminate();
       recentScansService.clearScans();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load recent scans from service
@@ -353,10 +385,28 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
     <div className="p-6 bg-white  max-w-4xl mx-auto max-[500px]:p-3">
       {/* Header */}
       <div className="mb-6 ">
-        <h1 className="text-2xl font-bold text-gray-900">Medicine Scanner</h1>
-        <p className="text-gray-600">
-          Scan medicine packaging to quickly check stock availability
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Medicine Scanner</h1>
+            <p className="text-gray-600">
+              Scan medicine packaging to quickly check stock availability
+            </p>
+          </div>
+          {/* Network Status Indicator */}
+          <div className="flex items-center gap-2">
+            {!isOnline ? (
+              <div className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
+                <WifiOff className="h-4 w-4" />
+                <span>Offline</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                <Wifi className="h-4 w-4" />
+                <span>Online</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       {/* Scanning Tips */}
       <ScanningTips isVisible={workflowState === "camera_ready"} />

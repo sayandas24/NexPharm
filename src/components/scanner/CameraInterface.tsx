@@ -31,6 +31,11 @@ export default function CameraInterface({
     error: null,
   });
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Detect mobile device and HTTPS
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isSecureContext = typeof window !== "undefined" && window.isSecureContext;
+  const [showHTTPSWarning, setShowHTTPSWarning] = useState(false);
 
   // Initialize camera on mount and when facing mode changes
   useEffect(() => {
@@ -60,8 +65,15 @@ export default function CameraInterface({
   const initializeCamera = async () => {
     setIsInitializing(true);
     setCameraState((prev) => ({ ...prev, error: null }));
+    setShowHTTPSWarning(false);
 
     try {
+      // Check HTTPS requirement on mobile
+      if (isMobile && !isSecureContext) {
+        setShowHTTPSWarning(true);
+        throw new Error("HTTPS required for camera access on mobile devices");
+      }
+
       // Check if mediaDevices is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Camera not supported in this browser");
@@ -73,17 +85,21 @@ export default function CameraInterface({
         streamRef.current = null;
       }
 
-      // Request camera access
+      // Request camera access with mobile-optimized constraints
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: facingMode,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: isMobile ? 1280 : 1920 },
+          height: { ideal: isMobile ? 720 : 1080 },
+          aspectRatio: { ideal: 16 / 9 },
         },
         audio: false,
       };
 
       console.log("📹 Requesting camera with constraints:", constraints);
+      console.log("📱 Device type:", isMobile ? "Mobile" : "Desktop");
+      console.log("🔒 Secure context:", isSecureContext);
+      
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log("✅ Camera stream obtained");
 
@@ -121,20 +137,33 @@ export default function CameraInterface({
   };
 
   /**
-   * Handle camera errors
+   * Handle camera errors with enhanced user guidance
    */
   const handleCameraError = (err: any) => {
     let error: CameraError;
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
 
     if (
       err.name === "NotAllowedError" ||
       err.name === "PermissionDeniedError"
     ) {
+      let userMessage = "Please allow camera access in your browser settings to use the scanner.";
+      
+      if (isMobile) {
+        if (isIOS) {
+          userMessage = "Camera permission denied. Go to Settings > Safari > Camera and allow access for this website.";
+        } else if (isAndroid) {
+          userMessage = "Camera permission denied. Tap the lock icon in the address bar and enable camera permissions.";
+        }
+      } else {
+        userMessage = "Camera permission denied. Click the camera icon in your browser's address bar and select 'Allow'.";
+      }
+
       error = {
         type: CameraErrorType.PERMISSION_DENIED,
         message: "Camera permission denied",
-        userMessage:
-          "Please allow camera access in your browser settings to use the scanner.",
+        userMessage,
         action: "settings",
       };
     } else if (
@@ -144,29 +173,49 @@ export default function CameraInterface({
       error = {
         type: CameraErrorType.NO_CAMERA_FOUND,
         message: "No camera found",
-        userMessage: "No camera device was found on your device.",
+        userMessage: "No camera device was found on your device. Please use the manual search option instead.",
         action: "fallback",
       };
     } else if (
       err.name === "NotReadableError" ||
       err.name === "TrackStartError"
     ) {
+      let userMessage = "Camera is already in use by another application. Please close other apps using the camera and try again.";
+      
+      if (isMobile) {
+        userMessage = "Camera is in use. Close other apps that might be using the camera and try again.";
+      }
+
       error = {
         type: CameraErrorType.CAMERA_IN_USE,
         message: "Camera is in use",
-        userMessage:
-          "Camera is already in use by another application. Please close other apps using the camera.",
+        userMessage,
         action: "retry",
+      };
+    } else if (err.message?.includes("HTTPS required")) {
+      error = {
+        type: CameraErrorType.UNKNOWN_ERROR,
+        message: "HTTPS required",
+        userMessage: "Camera access requires a secure connection (HTTPS). Please access the site using https://",
+        action: "settings",
       };
     } else {
       error = {
         type: CameraErrorType.UNKNOWN_ERROR,
         message: err.message || "Unknown camera error",
         userMessage:
-          "An error occurred while accessing the camera. Please try again.",
+          "An error occurred while accessing the camera. Please refresh the page and try again.",
         action: "retry",
       };
     }
+
+    console.error("Camera error details:", {
+      errorName: err.name,
+      errorMessage: err.message,
+      isMobile,
+      isSecureContext,
+      userAgent: navigator.userAgent,
+    });
 
     setCameraState((prev) => ({ ...prev, error: error.userMessage }));
     onError(error);
@@ -240,6 +289,27 @@ export default function CameraInterface({
   const handleRetry = () => {
     initializeCamera();
   };
+
+  // Show HTTPS warning on mobile
+  if (showHTTPSWarning && isMobile) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-orange-50 rounded-lg border-2 border-orange-300 min-h-[400px]">
+        <AlertCircle className="h-16 w-16 text-orange-500 mb-4" />
+        <h3 className="text-lg font-semibold mb-2 text-orange-900">HTTPS Required</h3>
+        <p className="text-gray-700 text-center mb-4 max-w-md">
+          Camera access requires a secure connection (HTTPS) on mobile devices. Please ensure you&apos;re accessing the site via https://.
+        </p>
+        <div className="text-sm text-gray-600 text-center max-w-md">
+          <p className="mb-2">Current URL: {typeof window !== "undefined" ? window.location.href : ""}</p>
+          {typeof window !== "undefined" && window.location.protocol === "http:" && (
+            <p className="text-orange-600 font-medium">
+              Try accessing: {window.location.href.replace("http://", "https://")}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Show error state
   if (cameraState.error && !isInitializing) {

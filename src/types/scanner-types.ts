@@ -30,6 +30,10 @@ export enum OCRErrorType {
   PROCESSING_FAILED = "processing_failed",
   NO_TEXT_DETECTED = "no_text_detected",
   LOW_QUALITY_IMAGE = "low_quality_image",
+  WORKER_LOAD_FAILED = "worker_load_failed",
+  NETWORK_ERROR = "network_error",
+  TIMEOUT = "timeout",
+  OFFLINE = "offline",
 }
 
 export interface BoundingBox {
