@@ -199,8 +199,12 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
         console.log("🔌 Disconnecting existing connection...");
         await powerSyncClient.powerSyncDb.disconnect();
         // Wait a bit for clean disconnect
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
+
+      // Reinitialize the database if needed
+      console.log("�  Reinitializing PowerSync database...");
+      await powerSyncClient.powerSyncDb.init();
 
       // Now reconnect
       console.log("🔗 Connecting to PowerSync...");
@@ -235,9 +239,8 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
-      // Clear and close database
+      // Clear database but don't close - just clear the data
       await powerSyncClient.powerSyncDb.disconnectAndClear();
-      await powerSyncClient.powerSyncDb.close();
 
       console.log("✅ Database cleared successfully");
     } catch (err) {

@@ -49,7 +49,7 @@ export default function LoginPage() {
       try {
         await signInWithPassword(values.email, values.password);
         console.log("✅ Login successful!");
-        router.push("/dashboard");
+        router.push("/");
       } catch (err: any) {
         setError(err.message || "Invalid email or password");
       } finally {
@@ -59,7 +59,7 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="flex items-center justify-center min-h-screen bg-white p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-4">
           {/* Logo/Icon */}

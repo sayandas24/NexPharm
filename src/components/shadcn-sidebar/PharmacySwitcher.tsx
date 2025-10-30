@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2 } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  GalleryVerticalEnd,
+  Loader2,
+} from "lucide-react";
 
 import {
   DropdownMenu,
@@ -24,15 +29,14 @@ export function PharmacySwitcher({
   defaultVersion: string;
 }) {
   const [isSwitching, setIsSwitching] = React.useState(false);
-  const [switchProgress, setSwitchProgress] = React.useState<SwitchStage | null>(null);
+  const [switchProgress, setSwitchProgress] =
+    React.useState<SwitchStage | null>(null);
   const [switchError, setSwitchError] = React.useState<string | null>(null);
-  const [previousPharmacyId, setPreviousPharmacyId] = React.useState<string | null>(null);
+  const [previousPharmacyId, setPreviousPharmacyId] = React.useState<
+    string | null
+  >(null);
 
-  const {
-    currentPharmacy,
-    pharmacies,
-    switchPharmacy,
-  } = useAuth();
+  const { currentPharmacy, pharmacies, switchPharmacy } = useAuth();
 
   // Progress messages for each stage
   const progressMessages: Record<SwitchStage, string> = {
@@ -83,17 +87,19 @@ export function PharmacySwitcher({
 
       // Check if online
       if (typeof navigator !== "undefined" && !navigator.onLine) {
-        setSwitchError("Cannot switch pharmacies while offline. Please check your internet connection.");
+        setSwitchError(
+          "Cannot switch pharmacies while offline. Please check your internet connection."
+        );
         console.error("❌ Cannot switch pharmacy - offline");
         return;
       }
 
       // Store current pharmacy for rollback
       setPreviousPharmacyId(currentPharmacy?.id || null);
-      
+
       // Clear any previous errors
       setSwitchError(null);
-      
+
       // Set switching state
       setIsSwitching(true);
       setSwitchProgress(SwitchStage.VALIDATING);
@@ -108,6 +114,12 @@ export function PharmacySwitcher({
         setIsSwitching(false);
         setSwitchProgress(null);
         console.log("✅ Pharmacy switch successful");
+
+        // Force page reload to refresh all data
+        console.log(
+          "🔄 Reloading page to refresh UI with new pharmacy data..."
+        );
+        window.location.reload();
       } catch (error: any) {
         // Error already handled by callback
         console.error("❌ Pharmacy switch failed:", error);

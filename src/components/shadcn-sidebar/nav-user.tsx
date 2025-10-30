@@ -40,6 +40,15 @@ export function NavUser({
   const { logout, currentPharmacy, currentUser } = useAuth();
   const router = useRouter();
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // router.push("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   // Show login button if no user
   if (!currentUser?.identities) {
     return (
@@ -110,7 +119,7 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => logout()}>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>
