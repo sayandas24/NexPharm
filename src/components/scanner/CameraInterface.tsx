@@ -23,6 +23,7 @@ export default function CameraInterface({
 }: CameraInterfaceProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null); // Store stream in ref for immediate access
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [cameraState, setCameraState] = useState<CameraState>({
     stream: null,
     facingMode: "environment",
@@ -31,7 +32,7 @@ export default function CameraInterface({
   });
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Initialize camera on mount
+  // Initialize camera on mount and when facing mode changes
   useEffect(() => {
     initializeCamera();
 
@@ -40,15 +41,7 @@ export default function CameraInterface({
       releaseCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Re-initialize when facing mode changes
-  useEffect(() => {
-    if (cameraState.hasPermission) {
-      initializeCamera();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraState.facingMode]);
+  }, [facingMode]);
 
   /**
    * Initialize camera with MediaDevices API
@@ -72,7 +65,7 @@ export default function CameraInterface({
       // Request camera access
       const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: cameraState.facingMode,
+          facingMode: facingMode,
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         },
@@ -233,10 +226,7 @@ export default function CameraInterface({
    * Switch between front and back camera
    */
   const switchCamera = () => {
-    setCameraState((prev) => ({
-      ...prev,
-      facingMode: prev.facingMode === "user" ? "environment" : "user",
-    }));
+    setFacingMode((prev) => prev === "user" ? "environment" : "user");
   };
 
   /**

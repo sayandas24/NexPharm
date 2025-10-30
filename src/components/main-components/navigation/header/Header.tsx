@@ -51,7 +51,7 @@ export default function Header() {
   };
 
   return (
-    <div className="flex items-center gap-2 px-4">
+    <div className="flex items-center gap-2 px-4 py-2">
       <SidebarTrigger className="-ml-1" />
       <Separator
         orientation="vertical"

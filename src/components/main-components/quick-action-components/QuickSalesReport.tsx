@@ -148,12 +148,12 @@ export default function QuickSalesReport() {
 
       {/* Scanner Dialog */}
       <Dialog open={dialogIsOpen} onOpenChange={setDialogIsOpen}>
-        <DialogContent className="min-w-[93vw] min-h-[95vh] max-h-[95vh] overflow-y-auto p-0">
+        <DialogContent className="min-w-[93vw] min-h-[95vh] max-h-[95vh] max-[500px]:min-h-[83vh] max-[500px]:max-h-[83vh] overflow-y-auto p-0">
           <div className="p-5 space-y-3">
-            <section className="flex items-center justify-between">
+            <section className="flex items-center justify-between flex-wrap">
               <div>
                 <h1 className="text-xl font-bold">Sales Analysis</h1>
-                <p className="text-muted-foreground text-sm mb-2">
+                <p className="text-muted-foreground text-xs mb-2">
                   Comprehensive sales analytics and customer insights
                 </p>
               </div>

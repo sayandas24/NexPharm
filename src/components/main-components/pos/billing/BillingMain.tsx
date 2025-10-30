@@ -100,24 +100,7 @@ export function BillingMain({
   const netAmount = calculateNetAmount(discount);
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center text-sm text-gray-500 mb-5">
-        <button
-          onClick={() => router.push("/")}
-          className="hover:text-gray-700"
-        >
-          Dashboard
-        </button>
-        <span className="mx-2">›</span>
-        <button
-          onClick={() => router.push("/pos")}
-          className="hover:text-gray-700"
-        >
-          Customer Management
-        </button>
-        <span className="mx-2">›</span>
-        <span className="text-gray-900 font-semibold">Billing</span>
-      </div>
+    <div className="container mx-auto p-6"> 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}

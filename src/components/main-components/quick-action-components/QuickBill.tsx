@@ -48,7 +48,7 @@ export default function QuickBill() {
       </button>
 
       <Dialog open={billOpen} onOpenChange={setBillOpen}>
-        <DialogContent className="min-w-[93vw] min-h-[93vh] overflow-y-auto p-0">
+        <DialogContent className="min-w-[93vw] min-h-[83vh] max-h-[83vh] overflow-y-auto p-0">
           <DialogHeader className="sr-only">
             <DialogTitle>Quick Bill</DialogTitle>
           </DialogHeader>

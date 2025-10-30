@@ -59,7 +59,7 @@ const MedicineSalesChart = memo(function MedicineSalesChart({ data, isLoading }:
   }
 
   return (
-    <Card>
+    <Card className='max-[600px]:w-[85vw]'>
       <CardHeader>
         <CardTitle>Top Selling Medicines</CardTitle>
       </CardHeader>
