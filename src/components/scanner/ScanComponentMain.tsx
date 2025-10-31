@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/use-auth";
 import { useMedicines } from "@/hooks/useMedicines";
 import { useKyselyDB } from "@/lib/powersync/PowersyncProvider";
-import CameraInterface from "@/components/scanner/SimpleCameraInterface";
+import SimpleCameraInterface from "@/components/scanner/SimpleCameraInterface";
 import MatchList from "@/components/scanner/MatchList";
 import EnhancedMedicineCard from "@/components/scanner/EnhancedMedicineCard";
 import RecentScans from "@/components/scanner/RecentScans";
@@ -21,6 +21,8 @@ import {
   ChevronRight,
   WifiOff,
   Wifi,
+  Video,
+  VideoOff,
 } from "lucide-react";
 import { ocrProcessor } from "@/services/ocr-processor.service";
 import { medicineMatchService } from "@/services/medicine-match.service";
@@ -56,7 +58,8 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
 
   const [billOpen, setBillOpen] = useState(false);
   // Workflow state
-  const [workflowState, setWorkflowState] = useState<ScanWorkflowState>("camera_ready");
+  const [workflowState, setWorkflowState] =
+    useState<ScanWorkflowState>("camera_ready");
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [cameraKey, setCameraKey] = useState<number>(0); // Key to force camera remount
   const [currentProcessingStep, setCurrentProcessingStep] = useState<
@@ -106,7 +109,7 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
       console.log("Connection restored");
       setIsOnline(true);
       toast.success("Connection restored");
-      
+
       // Auto-retry initialization if it failed due to offline
       if (workflowState === "error" && !ocrProcessor.isReady()) {
         initOCR();
@@ -351,9 +354,7 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
    */
   const handleViewBatches = () => {
     if (selectedMatch) {
-      router.push(
-        `/inventory/med-list/${selectedMatch.medicine.id}/batches`
-      );
+      router.push(`/inventory/med-list/${selectedMatch.medicine.id}/batches`);
     }
   };
 
@@ -387,12 +388,14 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
       <div className="mb-6 ">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Medicine Scanner</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Medicine Scanner
+            </h1>
             <p className="text-gray-600">
               Scan medicine packaging to quickly check stock availability
             </p>
           </div>
-          {/* Network Status Indicator */}
+          {/* Network Status */}
           <div className="flex items-center gap-2">
             {!isOnline ? (
               <div className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
@@ -419,15 +422,18 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
           workflowState === "processing" ||
           workflowState === "matching") && (
           <>
-            <CameraInterface
+            <SimpleCameraInterface
               key={cameraKey}
               onCapture={handleCapture}
               onError={handleCameraError}
-              isProcessing={workflowState === "processing" || workflowState === "matching"}
+              isProcessing={
+                workflowState === "processing" || workflowState === "matching"
+              }
             />
 
             {/* Processing Overlay */}
-            {(workflowState === "processing" || workflowState === "matching") && (
+            {(workflowState === "processing" ||
+              workflowState === "matching") && (
               <div className="mt-4">
                 <EnhancedProcessingState
                   currentStep={currentProcessingStep}
