@@ -79,10 +79,13 @@ export default function SimpleCameraInterface({
             });
         };
       }
+
+      return stream;
     } catch (err: any) {
       console.error("Camera error:", err);
       setError(`Error: ${err.name} - ${err.message}`);
       onError(err);
+      throw err;
     }
   };
 
@@ -97,7 +100,19 @@ export default function SimpleCameraInterface({
     setIsReady(false);
   };
 
-  // Fast initialization - start camera immediately, enumerate in parallel
+  const enumerateDevices = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      console.log("Enumerated devices:", devices);
+      const videoDevices = devices.filter((d) => d.kind === "videoinput" && d.deviceId);
+      console.log("Video devices:", videoDevices);
+      return videoDevices;
+    } catch (err) {
+      console.error("Failed to enumerate devices:", err);
+      return [];
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -105,30 +120,71 @@ export default function SimpleCameraInterface({
       try {
         // Get saved device from sessionStorage
         const savedDeviceId = sessionStorage.getItem("selectedCameraDevice");
+        console.log("Saved device ID:", savedDeviceId);
 
-        // Start camera IMMEDIATELY (don't wait for device enumeration)
-        const cameraPromise = startCamera(savedDeviceId || undefined);
+        // Start camera FIRST to get permissions
+        try {
+          const stream = await startCamera(savedDeviceId || undefined);
+          
+          if (!mounted) return;
 
-        // Enumerate devices in PARALLEL (not blocking camera start)
-        const devicesPromise = navigator.mediaDevices.enumerateDevices();
+          // NOW enumerate devices (after permissions granted)
+          const videoDevices = await enumerateDevices();
+          
+          if (!mounted) return;
 
-        // Wait for both operations
-        const [, devices] = await Promise.all([cameraPromise, devicesPromise]);
+          setAvailableDevices(videoDevices);
 
-        if (!mounted) return;
+          // Validate saved device exists
+          if (savedDeviceId && videoDevices.length > 0) {
+            const deviceExists = videoDevices.some(
+              (d) => d.deviceId === savedDeviceId
+            );
+            
+            if (!deviceExists) {
+              sessionStorage.removeItem("selectedCameraDevice");
+              console.log("Saved camera device no longer available");
+            }
+          }
 
-        // Process device list
-        const videoDevices = devices.filter((d) => d.kind === "videoinput");
-        setAvailableDevices(videoDevices);
+          // Update selectedDeviceId based on actual stream
+          if (stream) {
+            const tracks = stream.getVideoTracks();
+            if (tracks.length > 0) {
+              const settings = tracks[0].getSettings();
+              console.log("Camera settings:", settings);
+              if (settings.deviceId) {
+                setSelectedDeviceId(settings.deviceId);
+                sessionStorage.setItem("selectedCameraDevice", settings.deviceId);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Failed to start camera:", err);
+          
+          // Try fallback without device ID
+          if (savedDeviceId && mounted) {
+            try {
+              const stream = await startCamera();
+              
+              if (!mounted) return;
 
-        // Update selectedDeviceId based on actual stream
-        if (streamRef.current) {
-          const tracks = streamRef.current.getVideoTracks();
-          if (tracks.length > 0) {
-            const settings = tracks[0].getSettings();
-            if (settings.deviceId) {
-              setSelectedDeviceId(settings.deviceId);
-              sessionStorage.setItem("selectedCameraDevice", settings.deviceId);
+              // Enumerate after fallback
+              const videoDevices = await enumerateDevices();
+              setAvailableDevices(videoDevices);
+
+              if (stream) {
+                const tracks = stream.getVideoTracks();
+                if (tracks.length > 0) {
+                  const settings = tracks[0].getSettings();
+                  if (settings.deviceId) {
+                    setSelectedDeviceId(settings.deviceId);
+                    sessionStorage.setItem("selectedCameraDevice", settings.deviceId);
+                  }
+                }
+              }
+            } catch (fallbackErr) {
+              console.error("Fallback camera start also failed:", fallbackErr);
             }
           }
         }
@@ -141,10 +197,27 @@ export default function SimpleCameraInterface({
 
     // Listen for device changes
     const handleDeviceChange = async () => {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter((d) => d.kind === "videoinput");
-      if (mounted) {
-        setAvailableDevices(videoDevices);
+      if (!mounted) return;
+      
+      const videoDevices = await enumerateDevices();
+      setAvailableDevices(videoDevices);
+      
+      // Check if current device is still available
+      if (selectedDeviceId) {
+        const currentDeviceExists = videoDevices.some(
+          (d) => d.deviceId === selectedDeviceId
+        );
+        
+        if (!currentDeviceExists) {
+          console.log("Current camera disconnected, switching to default");
+          sessionStorage.removeItem("selectedCameraDevice");
+          stopCamera();
+          await startCamera();
+          
+          // Re-enumerate after starting new camera
+          const newDevices = await enumerateDevices();
+          setAvailableDevices(newDevices);
+        }
       }
     };
 
@@ -179,6 +252,10 @@ export default function SimpleCameraInterface({
 
     try {
       await startCamera(deviceId);
+      
+      // Re-enumerate to ensure we have fresh device info
+      const videoDevices = await enumerateDevices();
+      setAvailableDevices(videoDevices);
     } catch (err) {
       console.error("Failed to switch camera:", err);
       setError("Failed to switch camera");
@@ -188,7 +265,11 @@ export default function SimpleCameraInterface({
         const fallback = availableDevices[0];
         setSelectedDeviceId(fallback.deviceId);
         sessionStorage.setItem("selectedCameraDevice", fallback.deviceId);
-        await startCamera(fallback.deviceId);
+        try {
+          await startCamera(fallback.deviceId);
+        } catch (fallbackErr) {
+          console.error("Fallback camera also failed:", fallbackErr);
+        }
       }
     }
   };
@@ -198,9 +279,12 @@ export default function SimpleCameraInterface({
     const newMode = facingMode === "user" ? "environment" : "user";
     setFacingMode(newMode);
 
-    // Minimal delay for cleanup (reduced from 300ms)
     await new Promise((resolve) => setTimeout(resolve, 100));
     await startCamera();
+    
+    // Re-enumerate after switching
+    const videoDevices = await enumerateDevices();
+    setAvailableDevices(videoDevices);
   };
 
   if (error) {
@@ -241,7 +325,7 @@ export default function SimpleCameraInterface({
         )} 
 
         {!isReady && (
-          <div className="absolute inset-0 flex items-center justify-center text-white">
+          <div className="absolute inset-0 flex items-center justify-center text-white flex-col">
             <Loader2 className="h-12 w-12 animate-spin mb-2" />
             <p>Starting camera...</p>
           </div>

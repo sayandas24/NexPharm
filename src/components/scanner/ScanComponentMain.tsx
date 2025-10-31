@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/use-auth";
 import { useMedicines } from "@/hooks/useMedicines";
-import { useKyselyDB } from "@/lib/powersync/PowersyncProvider";
 import SimpleCameraInterface from "@/components/scanner/SimpleCameraInterface";
 import MatchList from "@/components/scanner/MatchList";
 import EnhancedMedicineCard from "@/components/scanner/EnhancedMedicineCard";
@@ -13,17 +12,7 @@ import ScanningTips from "@/components/scanner/ScanningTips";
 import EnhancedProcessingState from "@/components/scanner/EnhancedProcessingState";
 import MedicineCardSkeleton from "@/components/scanner/MedicineCardSkeleton";
 import { Button } from "@/components/ui/button";
-import {
-  AlertCircle,
-  Loader2,
-  RotateCcw,
-  Search,
-  ChevronRight,
-  WifiOff,
-  Wifi,
-  Video,
-  VideoOff,
-} from "lucide-react";
+import { AlertCircle, Loader2, RotateCcw, Search } from "lucide-react";
 import { ocrProcessor } from "@/services/ocr-processor.service";
 import { medicineMatchService } from "@/services/medicine-match.service";
 import { stockCheckerService } from "@/services/stock-checker.service";
@@ -35,7 +24,6 @@ import {
   PharmacyMedicineWithDetails,
   ScanWorkflowState,
   StockInfo,
-  SupplierInfo,
   SalesStatistics,
   RecentScan,
 } from "@/types/scanner-types";
@@ -54,7 +42,7 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
 
   const { fetchSalesForMedicine } = useSales(currentPharmacy?.id || "");
 
-  const { currentUser, loading } = useAuth();
+  const { currentUser } = useAuth();
 
   const [billOpen, setBillOpen] = useState(false);
   // Workflow state
@@ -84,9 +72,6 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
   // Error state
   const [error, setError] = useState<string | null>(null);
 
-  // Network state
-  const [isOnline, setIsOnline] = useState(true);
-
   // Initialize OCR worker on mount
   useEffect(() => {
     const initOCR = async () => {
@@ -104,38 +89,11 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
 
     initOCR();
 
-    // Setup online/offline listeners
-    const handleOnline = () => {
-      console.log("Connection restored");
-      setIsOnline(true);
-      toast.success("Connection restored");
-
-      // Auto-retry initialization if it failed due to offline
-      if (workflowState === "error" && !ocrProcessor.isReady()) {
-        initOCR();
-      }
-    };
-
-    const handleOffline = () => {
-      console.log("Connection lost");
-      setIsOnline(false);
-      toast.error("You are offline");
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    // Check initial online status
-    setIsOnline(navigator.onLine);
-
     // Cleanup on unmount
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
       ocrProcessor.terminate();
       recentScansService.clearScans();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load recent scans from service

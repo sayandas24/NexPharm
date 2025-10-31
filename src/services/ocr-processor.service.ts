@@ -4,7 +4,6 @@ import { createWorker, Worker } from "tesseract.js";
 import { OCRResult, OCRErrorType } from "@/types/scanner-types";
 import { preprocessImageForOCR } from "@/utils/image-processing.utils";
 import { cleanOCRText } from "@/utils/text-matching.utils";
-import { retryWithBackoff, isOnline } from "@/utils/network-utils";
 import {
   handleTesseractError,
   logProductionError,
@@ -37,37 +36,23 @@ class OCRProcessorService {
     try {
       console.log("Initializing Tesseract worker...");
 
-      // Check if online
-      if (!isOnline()) {
-        throw new Error("Device is offline");
-      }
-
-      // Try to initialize with retry logic
-      await retryWithBackoff(
-        async () => {
-          // Create worker with default CDN paths
-          // Tesseract.js will automatically use jsDelivr CDN
-          this.worker = await createWorker("eng", 1, {
-            // Use default CDN paths - Tesseract.js handles this automatically
-            logger: (m) => {
-              // Log progress for debugging
-              if (m.status === "recognizing text") {
-                console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-              } else if (m.status === "loading tesseract core") {
-                console.log("Loading Tesseract core...");
-              } else if (m.status === "initializing tesseract") {
-                console.log("Initializing Tesseract...");
-              } else if (m.status === "loading language traineddata") {
-                console.log("Loading language data...");
-              }
-            },
-          });
-
-          console.log("Tesseract worker initialized successfully");
+      // Create worker with default CDN paths
+      // Tesseract.js will automatically use jsDelivr CDN
+      this.worker = await createWorker("eng", 1, {
+        // Use default CDN paths - Tesseract.js handles this automatically
+        logger: (m) => {
+          // Log progress for debugging
+          if (m.status === "recognizing text") {
+            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+          } else if (m.status === "loading tesseract core") {
+            console.log("Loading Tesseract core...");
+          } else if (m.status === "initializing tesseract") {
+            console.log("Initializing Tesseract...");
+          } else if (m.status === "loading language traineddata") {
+            console.log("Loading language data...");
+          }
         },
-        3,
-        2000
-      );
+      });
 
       this.isInitialized = true;
       console.log("Tesseract worker ready");
@@ -78,9 +63,6 @@ class OCRProcessorService {
       logProductionError(error, {
         component: "OCRProcessorService",
         action: "initialize",
-        additionalInfo: {
-          online: isOnline(),
-        },
       });
 
       this.isInitialized = false;
@@ -117,11 +99,6 @@ class OCRProcessorService {
 
     try {
       console.log("Pre-processing image for OCR...");
-
-      // Check if online before processing
-      if (!isOnline()) {
-        throw new Error("Device is offline");
-      }
 
       // Pre-process image for better accuracy
       const processedImage = await preprocessImageForOCR(imageData);
@@ -187,9 +164,6 @@ class OCRProcessorService {
       logProductionError(error, {
         component: "OCRProcessorService",
         action: "processImage",
-        additionalInfo: {
-          online: isOnline(),
-        },
       });
 
       const err = error as Error;
@@ -201,11 +175,6 @@ class OCRProcessorService {
 
       if (err.message === "timeout") {
         const enhancedError = handleTesseractError(new Error("timeout"));
-        throw new Error(enhancedError.type);
-      }
-
-      if (err.message === "Device is offline") {
-        const enhancedError = handleTesseractError(err);
         throw new Error(enhancedError.type);
       }
 
