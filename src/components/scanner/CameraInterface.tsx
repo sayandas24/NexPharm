@@ -141,31 +141,43 @@ export default function CameraInterface({
           console.log("Video readyState:", video.readyState);
           console.log("Video paused:", video.paused);
         } catch (playError) {
-          console.warn("⚠️ Video autoplay failed:", playError);
-          // Try to play again after a short delay
-          setTimeout(async () => {
+          console.warn("⚠️ Video autoplay failed, retrying:", playError);
+          // Force play with multiple retries
+          let retries = 0;
+          const maxRetries = 3;
+          const retryPlay = async () => {
             try {
               await video.play();
-              console.log("▶️ Video playing after retry");
+              console.log("▶️ Video playing after retry", retries + 1);
             } catch (retryError) {
-              console.error("Video play retry failed:", retryError);
+              retries++;
+              if (retries < maxRetries) {
+                console.log(`Retry ${retries}/${maxRetries}...`);
+                setTimeout(retryPlay, 200 * retries);
+              } else {
+                console.error("Video play failed after all retries:", retryError);
+              }
             }
-          }, 100);
+          };
+          setTimeout(retryPlay, 100);
         }
       }
 
-      // Update state
-      setCameraState((prev) => ({
-        ...prev,
+      // Update state - IMPORTANT: Set this before setIsInitializing
+      setCameraState({
         stream,
+        facingMode: facingMode,
         hasPermission: true,
         error: null,
-      }));
+      });
+      
+      // Set initializing to false AFTER state is updated
+      setIsInitializing(false);
+      console.log("✅ Camera ready - hasPermission: true");
     } catch (err: any) {
       console.error("Camera initialization error:", err);
-      handleCameraError(err);
-    } finally {
       setIsInitializing(false);
+      handleCameraError(err);
     }
   };
 

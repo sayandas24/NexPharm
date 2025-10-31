@@ -18,7 +18,9 @@ export default function SimpleCameraInterface({
 }: SimpleCameraInterfaceProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+  const [facingMode, setFacingMode] = useState<"user" | "environment">(
+    "environment"
+  );
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function SimpleCameraInterface({
       }
 
       console.log("Requesting camera access...");
-      
+
       // Request camera with fallback constraints
       let stream: MediaStream;
       try {
@@ -74,12 +76,20 @@ export default function SimpleCameraInterface({
 
         // Wait for video to be ready
         await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error("Camera initialization timeout")), 10000);
+          const timeout = setTimeout(
+            () => reject(new Error("Camera initialization timeout")),
+            10000
+          );
 
           video.onloadedmetadata = async () => {
             clearTimeout(timeout);
-            console.log("Video ready:", video.videoWidth, "x", video.videoHeight);
-            
+            console.log(
+              "Video ready:",
+              video.videoWidth,
+              "x",
+              video.videoHeight
+            );
+
             try {
               await video.play();
               console.log("Video playing");
@@ -100,22 +110,32 @@ export default function SimpleCameraInterface({
       }
     } catch (err: any) {
       console.error("Camera error:", err);
-      
+
       // Provide user-friendly error messages
       let errorMessage = "Failed to access camera";
-      
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        errorMessage = "Camera permission denied. Please allow camera access in your browser settings.";
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+
+      if (
+        err.name === "NotAllowedError" ||
+        err.name === "PermissionDeniedError"
+      ) {
+        errorMessage =
+          "Camera permission denied. Please allow camera access in your browser settings.";
+      } else if (
+        err.name === "NotFoundError" ||
+        err.name === "DevicesNotFoundError"
+      ) {
         errorMessage = "No camera found on this device.";
-      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+      } else if (
+        err.name === "NotReadableError" ||
+        err.name === "TrackStartError"
+      ) {
         errorMessage = "Camera is already in use by another application.";
       } else if (err.name === "OverconstrainedError") {
         errorMessage = "Camera doesn't support the requested settings.";
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
       onError({
         name: err.name || "CameraError",
