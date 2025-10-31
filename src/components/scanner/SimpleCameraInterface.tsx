@@ -29,6 +29,11 @@ export default function SimpleCameraInterface({
     setError("");
 
     try {
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Camera API not supported in this browser");
+      }
+
       // Stop existing stream if any
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
@@ -36,15 +41,28 @@ export default function SimpleCameraInterface({
 
       console.log("Requesting camera access...");
       
-      // Request camera
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
+      // Request camera with fallback constraints
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      } catch (err) {
+        // Fallback: try without facingMode if it fails
+        console.log("Retrying without facingMode constraint...");
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      }
 
       console.log("Camera stream obtained:", stream.id);
       streamRef.current = stream;
@@ -56,7 +74,7 @@ export default function SimpleCameraInterface({
 
         // Wait for video to be ready
         await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error("Timeout")), 10000);
+          const timeout = setTimeout(() => reject(new Error("Camera initialization timeout")), 10000);
 
           video.onloadedmetadata = async () => {
             clearTimeout(timeout);
@@ -71,14 +89,39 @@ export default function SimpleCameraInterface({
               reject(playErr);
             }
           };
+
+          video.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error("Video element error"));
+          };
         });
 
         setIsReady(true);
       }
     } catch (err: any) {
       console.error("Camera error:", err);
-      setError(err.message || "Failed to access camera");
-      onError(err);
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to access camera";
+      
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        errorMessage = "Camera permission denied. Please allow camera access in your browser settings.";
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        errorMessage = "No camera found on this device.";
+      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+        errorMessage = "Camera is already in use by another application.";
+      } else if (err.name === "OverconstrainedError") {
+        errorMessage = "Camera doesn't support the requested settings.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      onError({
+        name: err.name || "CameraError",
+        message: err.message || errorMessage,
+        userMessage: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
