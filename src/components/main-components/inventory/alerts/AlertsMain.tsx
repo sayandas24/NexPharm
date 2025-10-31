@@ -30,7 +30,7 @@ export default function AlertsMain() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedAlerts, setSelectedAlerts] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   // Enable browser notifications for new alerts
   useAlertNotifications({
@@ -295,7 +295,7 @@ export default function AlertsMain() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <NotificationSettings />
+            {/* <NotificationSettings /> */}
             <Button
               onClick={handleExport}
               variant="outline"

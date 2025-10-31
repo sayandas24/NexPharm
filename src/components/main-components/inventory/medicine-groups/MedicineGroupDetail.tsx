@@ -120,37 +120,54 @@ export default function MedicineGroupDetail({
       </div>
 
       {/* Medicines Table */}
-      <Card className="border-1 border-zinc-200">
-        <Table>
+      {/* Medicines Table */}
+      <Card className="border border-zinc-200 shadow-sm overflow-hidden px-2">
+        <Table className="">
           <TableHeader>
-            <TableRow>
-              <TableHead className="font-semibold text-gray-900">
+            <TableRow className="">
+              <TableHead className="font-semibold text-gray-900 py-4">
                 Medicine Name ⇅
               </TableHead>
-              <TableHead className="font-semibold text-gray-900">
+              <TableHead className="font-semibold text-gray-900 py-4">
                 Medicine Category ⇅
               </TableHead>
-              <TableHead className="font-semibold text-gray-900">
+              <TableHead className="font-semibold text-gray-900 py-4">
                 Action
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredMedicines.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-gray-500">
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={3}
+                  className="text-center text-gray-500 py-12"
+                >
                   No medicines in this group
                 </TableCell>
               </TableRow>
             ) : (
               filteredMedicines.map((medicine) => (
-                <TableRow key={medicine.id}>
-                  <TableCell className="font-medium">{medicine.name}</TableCell>
-                  <TableCell>{medicine?.category}</TableCell>
-                  <TableCell>
+                <TableRow
+                  key={medicine.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
+                  <TableCell className="font-medium text-gray-900 py-4">
+                    {medicine.name}
+                  </TableCell>
+                  <TableCell className="text-gray-600 py-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                      {medicine?.category}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-4">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button className="bg-red-50 border-red-500 text-red-500 hover:text-red-600 hover:bg-red-50">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 hover:border-red-300 transition-colors"
+                        >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Remove from Group
                         </Button>
@@ -167,7 +184,7 @@ export default function MedicineGroupDetail({
                             onClick={() => handleRemoveFromGroup(medicine.id)}
                             className="bg-red-500 hover:bg-red-600 border-red-500"
                           >
-                            <Trash2 />
+                            <Trash2 className="w-4 h-4 mr-2" />
                             Remove
                           </AlertDialogAction>
                         </AlertDialogFooter>

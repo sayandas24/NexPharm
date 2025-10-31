@@ -68,7 +68,12 @@ export function DashboardMain() {
         </div>
       </div>
 
-      <div className="grid max-[1024px]:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        className="grid max-[1024px]:grid-cols-2 lg:grid-cols-4 gap-4"
+        style={{
+          animation: `fadeIn 0.3s ease-in-out .2s both`,
+        }}
+      >
         <InventoryStatusCard
           status={metrics?.inventoryStatus || "Good"}
           loading={loading}
@@ -90,7 +95,25 @@ export function DashboardMain() {
       </div>
 
       {/* Quick Actions Section */}
-      <QuickActions />
+      <div
+        style={{
+          animation: `fadeIn 0.3s ease-in-out .4s both`,
+        }}
+      >
+        <QuickActions />
+      </div>
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -121,7 +121,7 @@ export default function QuickReorderDialog({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-full sm:max-w-[500px] overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-[500px] overflow-y-auto p-5" >
         <SheetHeader>
           <SheetTitle>Quick Reorder</SheetTitle>
           <SheetDescription>
