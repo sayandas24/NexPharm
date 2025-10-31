@@ -26,124 +26,130 @@ export default function SimpleCameraInterface({
   const [isLoading, setIsLoading] = useState(false);
 
   // Start camera
+  // const startCamera = async () => {
+  //   setIsLoading(true);
+  //   setError("");
+
+  //   try {
+  //     // Check if getUserMedia is supported
+  //     // if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  //     //   throw new Error("Camera API not supported in this browser");
+  //     // }
+
+  //     // Stop existing stream if any
+  //     // if (streamRef.current) {
+  //     //   streamRef.current.getTracks().forEach((track) => track.stop());
+  //     // }
+
+  //     console.log("Requesting camera access...");
+
+  //     // Request camera with fallback constraints
+  //     let stream: MediaStream;
+  //     try {
+  //       stream = await navigator.mediaDevices.getUserMedia({
+  //         video: {
+  //           facingMode: facingMode,
+  //           width: { ideal: 1280 },
+  //           height: { ideal: 720 },
+  //         },
+  //         audio: false,
+  //       });
+  //     } catch (err) {
+  //       // Fallback: try without facingMode if it fails
+  //       console.log("Retrying without facingMode constraint...");
+  //       stream = await navigator.mediaDevices.getUserMedia({
+  //         video: {
+  //           width: { ideal: 1280 },
+  //           height: { ideal: 720 },
+  //         },
+  //         audio: false,
+  //       });
+  //     }
+
+  //     streamRef.current = stream;
+
+  //     // Set to video element
+  //     if (videoRef.current) {
+  //       const video = videoRef.current;
+  //       video.srcObject = stream;
+
+  //       // Force play
+  //       video.onloadedmetadata = () => {
+  //         console.log("Metadata loaded:", {
+  //           videoWidth: video.videoWidth,
+  //           videoHeight: video.videoHeight,
+  //           readyState: video.readyState,
+  //         });
+
+  //         video
+  //           .play()
+  //           .then(() => {
+  //             console.log("Video playing");
+  //             setIsReady(true);
+  //           })
+  //           .catch((err) => {
+  //             console.error("Play error:", err);
+  //             setError(`Play error: ${err.message}`);
+  //           });
+  //       };
+
+  //       setIsReady(true);
+  //     }
+  //   } catch (err: any) {
+  //     console.error("Camera error:", err);
+
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
   const startCamera = async () => {
-    setIsLoading(true);
     setError("");
 
     try {
-      // Check if getUserMedia is supported
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Camera API not supported in this browser");
-      }
+      // Simple camera request
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
 
-      // Stop existing stream if any
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      console.log("Stream obtained:", stream);
+      console.log("Video tracks:", stream.getVideoTracks());
 
-      console.log("Requesting camera access...");
-
-      // Request camera with fallback constraints
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: facingMode,
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        });
-      } catch (err) {
-        // Fallback: try without facingMode if it fails
-        console.log("Retrying without facingMode constraint...");
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        });
-      }
-
-      console.log("Camera stream obtained:", stream.id);
-      streamRef.current = stream;
-
-      // Set to video element
       if (videoRef.current) {
         const video = videoRef.current;
+
+        // Set srcObject directly
         video.srcObject = stream;
 
-        // Wait for video to be ready
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(
-            () => reject(new Error("Camera initialization timeout")),
-            10000
-          );
+        console.log("Stream set to video element");
+        streamRef.current = stream
 
-          video.onloadedmetadata = async () => {
-            clearTimeout(timeout);
-            console.log(
-              "Video ready:",
-              video.videoWidth,
-              "x",
-              video.videoHeight
-            );
+        // Force play
+        video.onloadedmetadata = () => {
+          console.log("Metadata loaded:", {
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+            readyState: video.readyState,
+          });
 
-            try {
-              await video.play();
+          video
+            .play()
+            .then(() => {
               console.log("Video playing");
-              resolve();
-            } catch (playErr) {
-              console.error("Play error:", playErr);
-              reject(playErr);
-            }
-          };
-
-          video.onerror = () => {
-            clearTimeout(timeout);
-            reject(new Error("Video element error"));
-          };
-        });
-
-        setIsReady(true);
+              setIsReady(true);
+            })
+            .catch((err) => {
+              console.error("Play error:", err);
+              setError(`Play error: ${err.message}`);
+            });
+        };
       }
     } catch (err: any) {
       console.error("Camera error:", err);
-
-      // Provide user-friendly error messages
-      let errorMessage = "Failed to access camera";
-
-      if (
-        err.name === "NotAllowedError" ||
-        err.name === "PermissionDeniedError"
-      ) {
-        errorMessage =
-          "Camera permission denied. Please allow camera access in your browser settings.";
-      } else if (
-        err.name === "NotFoundError" ||
-        err.name === "DevicesNotFoundError"
-      ) {
-        errorMessage = "No camera found on this device.";
-      } else if (
-        err.name === "NotReadableError" ||
-        err.name === "TrackStartError"
-      ) {
-        errorMessage = "Camera is already in use by another application.";
-      } else if (err.name === "OverconstrainedError") {
-        errorMessage = "Camera doesn't support the requested settings.";
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
-      onError({
-        name: err.name || "CameraError",
-        message: err.message || errorMessage,
-        userMessage: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
+      setError(`Error: ${err.name} - ${err.message}`);
     }
   };
 
@@ -160,19 +166,21 @@ export default function SimpleCameraInterface({
   };
 
   // Initialize on mount
-  useEffect(() => {
-    startCamera();
-    return () => stopCamera();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facingMode]);
+  // useEffect(() => {
+  //   startCamera();
+  //   return () => stopCamera();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [facingMode]);
 
   // Capture image
   const handleCapture = () => {
     if (!videoRef.current || !streamRef.current) {
       return;
     }
+    console.log("Capturing image...");
 
     const imageData = captureImageFromVideo(videoRef.current);
+    console.log("Image data:", imageData);
     if (imageData) {
       onCapture(imageData);
     } else {
@@ -211,6 +219,8 @@ export default function SimpleCameraInterface({
 
   return (
     <div className="relative w-full">
+      <Button onClick={startCamera}>Start Camera</Button>
+      <Button onClick={stopCamera}>Stop Camera</Button>
       {/* Video Preview */}
       <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
         <video
@@ -270,7 +280,7 @@ export default function SimpleCameraInterface({
         <Button
           size="lg"
           onClick={handleCapture}
-          disabled={isProcessing || !isReady}
+          // disabled={isProcessing || !isReady}
           className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600"
         >
           <Camera className="h-8 w-8" />

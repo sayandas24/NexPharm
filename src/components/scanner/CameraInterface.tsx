@@ -149,7 +149,7 @@ const CameraInterface = forwardRef<CameraInterfaceRef, CameraInterfaceProps>(
     return (
       <div className="relative w-full">
         {/* Manual Camera Control */}
-        {!isOpen && (
+        {/* {!isOpen && ( */}
           <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg min-h-[400px]">
             <Camera className="h-16 w-16 text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold mb-2">Camera Ready</h3>
@@ -160,7 +160,7 @@ const CameraInterface = forwardRef<CameraInterfaceRef, CameraInterfaceProps>(
               Open Camera
             </Button>
           </div>
-        )}
+        {/* // )} */}
 
         {/* Video Preview */}
         {isOpen && (
