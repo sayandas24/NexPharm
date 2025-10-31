@@ -109,15 +109,48 @@ export default function CameraInterface({
       // Set stream to video element
       if (videoRef.current) {
         console.log("📺 Setting stream to video element");
-        videoRef.current.srcObject = stream;
+        const video = videoRef.current;
+        
+        // Set srcObject
+        video.srcObject = stream;
+
+        // Wait for video metadata to load before playing
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error("Video metadata load timeout"));
+          }, 5000);
+
+          video.onloadedmetadata = () => {
+            clearTimeout(timeout);
+            console.log("📹 Video metadata loaded");
+            console.log("Video dimensions:", video.videoWidth, "x", video.videoHeight);
+            resolve();
+          };
+
+          video.onerror = (err) => {
+            clearTimeout(timeout);
+            console.error("Video error:", err);
+            reject(new Error("Video load error"));
+          };
+        });
 
         // Try to play the video
         try {
-          await videoRef.current.play();
+          await video.play();
           console.log("▶️ Video playing successfully");
+          console.log("Video readyState:", video.readyState);
+          console.log("Video paused:", video.paused);
         } catch (playError) {
-          console.warn("⚠️ Video autoplay failed (this is normal on some browsers):", playError);
-          // Don't throw - the video will still work, just might not autoplay
+          console.warn("⚠️ Video autoplay failed:", playError);
+          // Try to play again after a short delay
+          setTimeout(async () => {
+            try {
+              await video.play();
+              console.log("▶️ Video playing after retry");
+            } catch (retryError) {
+              console.error("Video play retry failed:", retryError);
+            }
+          }, 100);
         }
       }
 
@@ -346,10 +379,25 @@ export default function CameraInterface({
           autoPlay
           playsInline
           muted
+          webkit-playsinline="true"
           className="w-full h-full object-cover"
           style={{
-            transform: "scaleX(1)",
-            WebkitTransform: "scaleX(1)",
+            transform: facingMode === "user" ? "scaleX(-1)" : "scaleX(1)",
+            WebkitTransform: facingMode === "user" ? "scaleX(-1)" : "scaleX(1)",
+          }}
+          onLoadedMetadata={(e) => {
+            const video = e.currentTarget;
+            console.log("Video metadata loaded event:", {
+              videoWidth: video.videoWidth,
+              videoHeight: video.videoHeight,
+              readyState: video.readyState,
+            });
+          }}
+          onCanPlay={() => {
+            console.log("Video can play event");
+          }}
+          onPlay={() => {
+            console.log("Video play event");
           }}
         />
 
