@@ -29,10 +29,10 @@ export default function SimpleCameraTest() {
 
       if (videoRef.current) {
         const video = videoRef.current;
-        
+
         // Set srcObject directly
         video.srcObject = stream;
-        
+
         setStreamInfo(`Stream set to video element`);
         console.log("Stream set to video element");
 
@@ -43,12 +43,17 @@ export default function SimpleCameraTest() {
             videoHeight: video.videoHeight,
             readyState: video.readyState,
           });
-          setStreamInfo(`Metadata loaded: ${video.videoWidth}x${video.videoHeight}`);
-          
-          video.play()
+          setStreamInfo(
+            `Metadata loaded: ${video.videoWidth}x${video.videoHeight}`
+          );
+
+          video
+            .play()
             .then(() => {
               console.log("Video playing");
-              setStreamInfo(`Video playing: ${video.videoWidth}x${video.videoHeight}`);
+              setStreamInfo(
+                `Video playing: ${video.videoWidth}x${video.videoHeight}`
+              );
               setIsOpen(true);
             })
             .catch((err) => {
@@ -76,7 +81,7 @@ export default function SimpleCameraTest() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Simple Camera Test</h1>
-      
+
       <div className="mb-4 space-x-2">
         <Button onClick={openCamera} disabled={isOpen}>
           Open Camera
@@ -93,9 +98,7 @@ export default function SimpleCameraTest() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-900 rounded">
-          {error}
-        </div>
+        <div className="mb-4 p-3 bg-red-50 text-red-900 rounded">{error}</div>
       )}
 
       <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
@@ -115,9 +118,20 @@ export default function SimpleCameraTest() {
 
       <div className="mt-4 p-4 bg-gray-100 rounded text-sm">
         <h3 className="font-semibold mb-2">Debug Info:</h3>
-        <p>Browser: {navigator.userAgent}</p>
-        <p>Secure Context: {window.isSecureContext ? "Yes" : "No"}</p>
-        <p>Protocol: {window.location.protocol}</p>
+        <p>
+          Browser:{" "}
+          {typeof navigator !== "undefined" ? navigator.userAgent : "N/A"}
+        </p>
+        <p>
+          Secure Context:{" "}
+          {typeof window !== "undefined" && window.isSecureContext
+            ? "Yes"
+            : "No"}
+        </p>
+        <p>
+          Protocol:{" "}
+          {typeof window !== "undefined" ? window.location.protocol : "N/A"}
+        </p>
       </div>
     </div>
   );
