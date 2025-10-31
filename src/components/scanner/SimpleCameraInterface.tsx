@@ -1,8 +1,21 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { Camera, SwitchCamera, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Camera,
+  SwitchCamera,
+  AlertCircle,
+  Loader2,
+  Video,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { captureImageFromVideo } from "@/utils/image-processing.utils";
 
 interface SimpleCameraInterfaceProps {
@@ -23,37 +36,40 @@ export default function SimpleCameraInterface({
   );
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [availableDevices, setAvailableDevices] = useState<MediaDeviceInfo[]>(
+    []
+  );
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
 
-  
-  
-  const startCamera = async () => {
+  const startCamera = async (deviceId?: string) => {
     setError("");
 
     try {
-      // Simple camera request
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+      const constraints: MediaStreamConstraints = {
+        video: deviceId
+          ? {
+              deviceId: { exact: deviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            }
+          : {
+              facingMode: facingMode,
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
         audio: false,
-      });
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
       if (videoRef.current) {
-        const video = videoRef.current;
-
-        // Set srcObject directly
-        video.srcObject = stream;
-
+        videoRef.current.srcObject = stream;
         streamRef.current = stream;
 
-        // Force play
-        video.onloadedmetadata = () => {
-
-          video
-            .play()
+        // Use oncanplay instead of onloadedmetadata for faster ready state
+        videoRef.current.oncanplay = () => {
+          videoRef.current
+            ?.play()
             .then(() => {
               setIsReady(true);
             })
@@ -66,10 +82,10 @@ export default function SimpleCameraInterface({
     } catch (err: any) {
       console.error("Camera error:", err);
       setError(`Error: ${err.name} - ${err.message}`);
+      onError(err);
     }
   };
 
-  // Stop camera
   const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -81,21 +97,73 @@ export default function SimpleCameraInterface({
     setIsReady(false);
   };
 
-  // Initialize on mount
+  // Fast initialization - start camera immediately, enumerate in parallel
   useEffect(() => {
-    startCamera();
-    return () => stopCamera();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let mounted = true;
+
+    const initCamera = async () => {
+      try {
+        // Get saved device from sessionStorage
+        const savedDeviceId = sessionStorage.getItem("selectedCameraDevice");
+
+        // Start camera IMMEDIATELY (don't wait for device enumeration)
+        const cameraPromise = startCamera(savedDeviceId || undefined);
+
+        // Enumerate devices in PARALLEL (not blocking camera start)
+        const devicesPromise = navigator.mediaDevices.enumerateDevices();
+
+        // Wait for both operations
+        const [, devices] = await Promise.all([cameraPromise, devicesPromise]);
+
+        if (!mounted) return;
+
+        // Process device list
+        const videoDevices = devices.filter((d) => d.kind === "videoinput");
+        setAvailableDevices(videoDevices);
+
+        // Update selectedDeviceId based on actual stream
+        if (streamRef.current) {
+          const tracks = streamRef.current.getVideoTracks();
+          if (tracks.length > 0) {
+            const settings = tracks[0].getSettings();
+            if (settings.deviceId) {
+              setSelectedDeviceId(settings.deviceId);
+              sessionStorage.setItem("selectedCameraDevice", settings.deviceId);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to initialize camera:", err);
+      }
+    };
+
+    initCamera();
+
+    // Listen for device changes
+    const handleDeviceChange = async () => {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === "videoinput");
+      if (mounted) {
+        setAvailableDevices(videoDevices);
+      }
+    };
+
+    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
+
+    return () => {
+      mounted = false;
+      stopCamera();
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        handleDeviceChange
+      );
+    };
   }, []);
 
-  // Capture image
   const handleCapture = () => {
-    if (!videoRef.current || !streamRef.current) {
-      return;
-    }
+    if (!videoRef.current || !streamRef.current) return;
 
     const imageData = captureImageFromVideo(videoRef.current);
-    console.log("Image data:", imageData);
     if (imageData) {
       stopCamera();
       onCapture(imageData);
@@ -104,34 +172,44 @@ export default function SimpleCameraInterface({
     }
   };
 
-  // Switch camera
-  const switchCamera = () => {
+  const handleDeviceChange = async (deviceId: string) => {
+    setSelectedDeviceId(deviceId);
+    sessionStorage.setItem("selectedCameraDevice", deviceId);
     stopCamera();
-    setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
-    setTimeout(() => {
-      console.log("Switching camera...", facingMode);
-      startCamera();
-    }, 300);
+
+    try {
+      await startCamera(deviceId);
+    } catch (err) {
+      console.error("Failed to switch camera:", err);
+      setError("Failed to switch camera");
+
+      // Fallback to first available device
+      if (availableDevices.length > 0) {
+        const fallback = availableDevices[0];
+        setSelectedDeviceId(fallback.deviceId);
+        sessionStorage.setItem("selectedCameraDevice", fallback.deviceId);
+        await startCamera(fallback.deviceId);
+      }
+    }
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg min-h-[400px]">
-        <Loader2 className="h-16 w-16 text-primary animate-spin mb-4" />
-        <p className="text-gray-600">Starting camera...</p>
-      </div>
-    );
-  }
+  const switchCamera = async () => {
+    stopCamera();
+    const newMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newMode);
 
-  // Error state
+    // Minimal delay for cleanup (reduced from 300ms)
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await startCamera();
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg min-h-[400px]">
         <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
         <h3 className="text-lg font-semibold mb-2">Camera Error</h3>
         <p className="text-gray-600 text-center mb-4 max-w-md">{error}</p>
-        <Button onClick={startCamera} variant="outline">
+        <Button onClick={() => startCamera()} variant="outline">
           Try Again
         </Button>
       </div>
@@ -140,7 +218,6 @@ export default function SimpleCameraInterface({
 
   return (
     <div className="relative w-full">
-      {/* Video Preview */}
       <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
         <video
           ref={videoRef}
@@ -153,60 +230,69 @@ export default function SimpleCameraInterface({
           }}
         />
 
-        {/* Overlay guide */}
         {isReady && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="border-3 border-white/50 rounded-lg w-4/5 h-3/4 shadow-lg">
-              <div className="absolute top-2 text-nowrap left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-1 rounded-full text-xs">
+            <div className="border-2 border-white/50 rounded-lg w-4/5 h-3/4">
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-1 rounded-full text-xs whitespace-nowrap">
                 Position medicine packaging within frame
               </div>
             </div>
           </div>
-        )}
+        )} 
 
-        {/* Processing overlay */}
-        {isProcessing && (
-          <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-2" />
-              <p>Processing image...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Not ready overlay */}
-        {!isReady && !isLoading && (
+        {!isReady && (
           <div className="absolute inset-0 flex items-center justify-center text-white">
-            <p>Camera not ready</p>
+            <Loader2 className="h-12 w-12 animate-spin mb-2" />
+            <p>Starting camera...</p>
           </div>
         )}
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-4 mt-4">
-        {/* Switch Camera Button */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={switchCamera}
-          disabled={isProcessing || !isReady}
-          className="h-12 w-12"
-        >
-          <SwitchCamera className="h-5 w-5" />
-        </Button>
+      <div className="flex flex-col items-center gap-4 mt-4">
+        {availableDevices.length > 1 && (
+          <div className="w-full max-w-xs">
+            <Select
+              value={selectedDeviceId}
+              onValueChange={handleDeviceChange}
+              disabled={isProcessing || !isReady}
+            >
+              <SelectTrigger className="w-full">
+                <Video className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Select camera" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableDevices.map((device, index) => (
+                  <SelectItem key={device.deviceId} value={device.deviceId}>
+                    {device.label || `Camera ${index + 1}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
-        {/* Capture Button */}
-        <Button
-          size="lg"
-          onClick={handleCapture}
-          disabled={isProcessing || !isReady}
-          className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600"
-        >
-          <Camera className="h-8 w-8" />
-        </Button>
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={switchCamera}
+            disabled={isProcessing || !isReady}
+            className="h-12 w-12"
+          >
+            <SwitchCamera className="h-5 w-5" />
+          </Button>
 
-        {/* Placeholder for symmetry */}
-        <div className="h-12 w-12" />
+          <Button
+            size="lg"
+            onClick={handleCapture}
+            disabled={isProcessing || !isReady}
+            className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600"
+          >
+            <Camera className="h-8 w-8" />
+          </Button>
+
+          <div className="h-12 w-12" />
+        </div>
       </div>
     </div>
   );
