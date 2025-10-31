@@ -5,6 +5,7 @@ import {
   Check,
   ChevronsUpDown,
   GalleryVerticalEnd,
+  Hospital,
   Loader2,
 } from "lucide-react";
 
@@ -144,11 +145,11 @@ export function PharmacySwitcher({}) {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               disabled={isSwitching}
             >
-              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+              <div className="bg-purple-100 border-purple-200 border text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                 {isSwitching ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
-                  <GalleryVerticalEnd className="size-4" />
+                  <Hospital className="size-4 text-purple-500 " />
                 )}
               </div>
               <div className="flex flex-col gap-0.5 leading-none truncate">
