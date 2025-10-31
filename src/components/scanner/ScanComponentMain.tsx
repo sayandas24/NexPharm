@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/use-auth";
 import { useMedicines } from "@/hooks/useMedicines";
 import { useKyselyDB } from "@/lib/powersync/PowersyncProvider";
-import CameraInterface from "@/components/scanner/CameraInterface";
+import CameraInterface from "@/components/scanner/SimpleCameraInterface";
 import MatchList from "@/components/scanner/MatchList";
 import EnhancedMedicineCard from "@/components/scanner/EnhancedMedicineCard";
 import RecentScans from "@/components/scanner/RecentScans";
