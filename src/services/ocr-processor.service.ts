@@ -10,26 +10,10 @@ import {
   logProductionError,
 } from "@/utils/scanner-error-handler";
 
-// CDN URLs for Tesseract.js worker files
-const PRIMARY_CDN = {
-  workerPath:
-    "https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/worker.min.js",
-  langPath: "https://cdn.jsdelivr.net/npm/tesseract.js-data@1.0.0/",
-  corePath:
-    "https://cdn.jsdelivr.net/npm/tesseract.js-core@6.0.1/tesseract-core.wasm.js",
-};
-
-const FALLBACK_CDN = {
-  workerPath: "https://unpkg.com/tesseract.js@6.0.1/dist/worker.min.js",
-  langPath: "https://unpkg.com/tesseract.js-data@1.0.0/",
-  corePath: "https://unpkg.com/tesseract.js-core@6.0.1/tesseract-core.wasm.js",
-};
-
 class OCRProcessorService {
   private worker: Worker | null = null;
   private isInitialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
-  private currentCDN: typeof PRIMARY_CDN = PRIMARY_CDN;
 
   /**
    * Initialize Tesseract worker
@@ -61,52 +45,28 @@ class OCRProcessorService {
       // Try to initialize with retry logic
       await retryWithBackoff(
         async () => {
-          try {
-            // Create worker with CDN configuration
-            this.worker = await createWorker("eng", 1, {
-              workerPath: this.currentCDN.workerPath,
-              langPath: this.currentCDN.langPath,
-              corePath: this.currentCDN.corePath,
-              logger: (m) => {
-                // Log progress for debugging
-                if (m.status === "recognizing text") {
-                  console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-                }
-              },
-            });
+          // Create worker with default CDN paths
+          // Tesseract.js will automatically use jsDelivr CDN
+          this.worker = await createWorker("eng", 1, {
+            // Use default CDN paths - Tesseract.js handles this automatically
+            logger: (m) => {
+              // Log progress for debugging
+              if (m.status === "recognizing text") {
+                console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+              } else if (m.status === "loading tesseract core") {
+                console.log("Loading Tesseract core...");
+              } else if (m.status === "initializing tesseract") {
+                console.log("Initializing Tesseract...");
+              } else if (m.status === "loading language traineddata") {
+                console.log("Loading language data...");
+              }
+            },
+          });
 
-            console.log(
-              "Tesseract worker initialized successfully with CDN:",
-              this.currentCDN.workerPath
-            );
-          } catch (error) {
-            // If primary CDN fails, try fallback
-            if (this.currentCDN === PRIMARY_CDN) {
-              console.warn("Primary CDN failed, trying fallback CDN...");
-              this.currentCDN = FALLBACK_CDN;
-
-              // Try with fallback CDN
-              this.worker = await createWorker("eng", 1, {
-                workerPath: this.currentCDN.workerPath,
-                langPath: this.currentCDN.langPath,
-                corePath: this.currentCDN.corePath,
-                logger: (m) => {
-                  if (m.status === "recognizing text") {
-                    console.log(
-                      `OCR Progress: ${Math.round(m.progress * 100)}%`
-                    );
-                  }
-                },
-              });
-
-              console.log("Tesseract worker initialized with fallback CDN");
-            } else {
-              throw error;
-            }
-          }
+          console.log("Tesseract worker initialized successfully");
         },
         3,
-        1000
+        2000
       );
 
       this.isInitialized = true;
@@ -119,7 +79,6 @@ class OCRProcessorService {
         component: "OCRProcessorService",
         action: "initialize",
         additionalInfo: {
-          cdnUsed: this.currentCDN.workerPath,
           online: isOnline(),
         },
       });
@@ -230,7 +189,6 @@ class OCRProcessorService {
         action: "processImage",
         additionalInfo: {
           online: isOnline(),
-          cdnUsed: this.currentCDN.workerPath,
         },
       });
 
