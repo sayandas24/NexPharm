@@ -25,12 +25,12 @@ export default function QuickMedicineAdd() {
     <div>
       <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <SheetTrigger asChild>
-          <button className="group w-full relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-300 to-purple-600 p-6 text-left shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-100">
+          <button className="group w-full relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-300 to-purple-600 p-4 md:p-6 text-left shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-100">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 transition-transform duration-300 group-hover:scale-150"></div>
             <div className="relative">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-3 backdrop-blur-sm">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-lg flex items-center justify-center mb-2 md:mb-3 backdrop-blur-sm">
                 <svg
-                  className="w-6 h-6 text-white"
+                  className="w-5 h-5 md:w-6 md:h-6 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -43,10 +43,10 @@ export default function QuickMedicineAdd() {
                   />
                 </svg>
               </div>
-              <h3 className="text-white font-semibold text-lg mb-1">
+              <h3 className="text-white font-semibold text-base md:text-lg mb-0.5 md:mb-1">
                 Add Medicine
               </h3>
-              <p className="text-purple-100 text-sm">Add to inventory</p>
+              <p className="text-purple-100 text-xs md:text-sm">Add to inventory</p>
             </div>
           </button>
         </SheetTrigger>

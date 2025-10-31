@@ -385,32 +385,24 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
   return (
     <div className="p-6 bg-white  max-w-4xl mx-auto max-[500px]:p-3">
       {/* Header */}
-      <div className="mb-6 ">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Medicine Scanner
-            </h1>
-            <p className="text-gray-600">
-              Scan medicine packaging to quickly check stock availability
-            </p>
-          </div>
-          {/* Network Status */}
-          <div className="flex items-center gap-2">
-            {!isOnline ? (
-              <div className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
-                <WifiOff className="h-4 w-4" />
-                <span>Offline</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                <Wifi className="h-4 w-4" />
-                <span>Online</span>
-              </div>
-            )}
+      {(workflowState === "idle" ||
+        workflowState === "camera_initializing" ||
+        workflowState === "camera_ready" ||
+        workflowState === "processing" ||
+        workflowState === "matching") && (
+        <div className="mb-6 ">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Medicine Scanner
+              </h1>
+              <p className="text-gray-600">
+                Scan medicine packaging to quickly check stock availability
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
       {/* Scanning Tips */}
       <ScanningTips isVisible={workflowState === "camera_ready"} />
       {/* Main Content */}
@@ -521,65 +513,109 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3 justify-center">
-              <Button
-                onClick={handleScanAnother}
-                variant="outline"
-                size="lg"
-                className="min-w-[200px]"
-              >
-                <RotateCcw className="h-5 w-5 mr-2" />
-                Scan Another
-              </Button>
-              {!selectedMatch && matches.length === 0 && (
-                <Button
-                  onClick={handleManualSearch}
-                  variant="default"
-                  size="lg"
-                  className="min-w-[200px]"
-                >
-                  <Search className="h-5 w-5 mr-2" />
-                  Manual Search
-                </Button>
-              )}
-            </div>
+            <ActionButtons
+              handleScanAnother={handleScanAnother}
+              handleManualSearch={handleManualSearch}
+              selectedMatch={selectedMatch}
+              matches={matches}
+            />
           </div>
         )}
 
         {/* Error State */}
         {workflowState === "error" && (
-          <div className="bg-white rounded-lg p-8 text-center">
-            <AlertCircle className="h-16 w-16 mx-auto text-red-500 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error</h3>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={handleScanAnother} variant="outline">
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-              <Button onClick={handleManualSearch} variant="default">
-                <Search className="h-4 w-4 mr-2" />
-                Manual Search
-              </Button>
-            </div>
-          </div>
+          <ErrorState
+            error={error}
+            handleScanAnother={handleScanAnother}
+            handleManualSearch={handleManualSearch}
+          />
         )}
       </div>
       {/* mark open bill if click on add to carrt button */}
-      <Dialog open={billOpen} onOpenChange={setBillOpen}>
-        <DialogContent className="min-w-[99vw] min-h-[93vh] overflow-y-auto p-0">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Quick Bill</DialogTitle>
-          </DialogHeader>
-          {currentPharmacy?.id && currentUser?.id && (
-            <BillingMain
-              pharmacyId={currentPharmacy.id}
-              userId={currentUser.id}
-              preSelectedMedicine={selectedMatch?.medicine} // Pass the medicine here
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+
+      <QuickBillComponent
+        currentPharmacy={currentPharmacy}
+        currentUser={currentUser}
+        selectedMatch={selectedMatch}
+        setBillOpen={setBillOpen}
+        billOpen={billOpen}
+      />
     </div>
   );
 }
+
+const ActionButtons = ({
+  handleScanAnother,
+  handleManualSearch,
+  selectedMatch,
+  matches,
+}: any) => {
+  return (
+    <div className="flex gap-3 justify-center">
+      <Button
+        onClick={handleScanAnother}
+        variant="outline"
+        size="lg"
+        className="min-w-[200px]"
+      >
+        <RotateCcw className="h-5 w-5 mr-2" />
+        Scan Another
+      </Button>
+      {!selectedMatch && matches.length === 0 && (
+        <Button
+          onClick={handleManualSearch}
+          variant="default"
+          size="lg"
+          className="min-w-[200px]"
+        >
+          <Search className="h-5 w-5 mr-2" />
+          Manual Search
+        </Button>
+      )}
+    </div>
+  );
+};
+
+const ErrorState = ({ error, handleScanAnother, handleManualSearch }: any) => {
+  return (
+    <div className="bg-white rounded-lg p-8 text-center">
+      <AlertCircle className="h-16 w-16 mx-auto text-red-500 mb-4" />
+      <h3 className="text-lg font-semibold mb-2">Error</h3>
+      <p className="text-gray-600 mb-6">{error}</p>
+      <div className="flex gap-3 justify-center">
+        <Button onClick={handleScanAnother} variant="outline">
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Try Again
+        </Button>
+        <Button onClick={handleManualSearch} variant="default">
+          <Search className="h-4 w-4 mr-2" />
+          Manual Search
+        </Button>
+      </div>
+    </div>
+  );
+};
+const QuickBillComponent = ({
+  currentPharmacy,
+  currentUser,
+  selectedMatch,
+  setBillOpen,
+  billOpen,
+}: any) => {
+  return (
+    <Dialog open={billOpen} onOpenChange={setBillOpen}>
+      <DialogContent className="min-w-[99vw] min-h-[93vh] overflow-y-auto p-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Quick Bill</DialogTitle>
+        </DialogHeader>
+        {currentPharmacy?.id && currentUser?.id && (
+          <BillingMain
+            pharmacyId={currentPharmacy.id}
+            userId={currentUser.id}
+            preSelectedMedicine={selectedMatch?.medicine} // Pass the medicine here
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};

@@ -47,21 +47,21 @@ export function RevenueCard({ revenue, period, onPeriodChange, loading }: Revenu
 
   if (loading) {
     return (
-      <div className="relative rounded-xl border-2 h-[13rem] border-gray-300 overflow-hidden bg-gray-200 flex flex-col">
+      <div className="relative rounded-xl border-2 h-[13rem] md:h-[10rem] border-gray-300 overflow-hidden bg-gray-200 flex flex-col">
         {/* Upper white section */}
         <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">
-          <div className="flex flex-col items-center space-y-2">
+          <div className="flex flex-col items-center space-y-1 md:space-y-2">
             {/* Icon skeleton */}
-            <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse" />
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-200 rounded-full animate-pulse" />
             {/* Text skeletons */}
-            <div className="space-y-2 flex flex-col items-center">
-              <div className="h-7 bg-gray-200 rounded w-28 animate-pulse" />
-              <div className="h-7 bg-gray-200 rounded w-24 animate-pulse" />
+            <div className="space-y-1 md:space-y-2 flex flex-col items-center">
+              <div className="h-5 md:h-7 bg-gray-200 rounded w-28 animate-pulse" />
+              <div className="h-5 md:h-7 bg-gray-200 rounded w-24 animate-pulse" />
             </div>
           </div>
         </div>
         {/* Bottom action area skeleton */}
-        <div className="relative w-full flex justify-center h-8">
+        <div className="relative w-full flex justify-center h-7 md:h-8">
         </div>
       </div>
     );
@@ -69,31 +69,31 @@ export function RevenueCard({ revenue, period, onPeriodChange, loading }: Revenu
 
   return (
     <div
-      className="relative rounded-xl border-2 h-[13rem] border-green-600 bg-green-200 flex flex-col"
+      className="relative rounded-xl border-2 h-[13rem] md:h-[10rem] border-green-600 bg-green-200 flex flex-col"
     >
       {/* Upper white section */}
       <div className="h-full bg-white rounded-xl flex flex-col items-center justify-center">
-        <div className="flex flex-col items-center space-y-2 rounded-xl">
+        <div className="flex flex-col items-center space-y-1 md:space-y-2 rounded-xl">
           {/* Icon */}
-          <div className="w-10 h-10 flex items-center justify-center">
+          <div className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center">
             <IndianRupee
-              className="w-10 h-10 text-green-600"
+              className="w-8 h-8 md:w-10 md:h-10 text-green-600"
               strokeWidth={2.5}
             />
           </div>
           {/* Revenue Amount */}
           <div className="text-center">
-            <h2 className="text-lg font-bold text-gray-900 mb-1">
+            <h2 className="text-base md:text-lg font-bold text-gray-900 mb-0.5 md:mb-1">
               {formatIndianCurrency(revenue)}
             </h2>
             {/* Period Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1 text-lg text-gray-700 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-1 text-base md:text-lg text-gray-700 hover:text-gray-900 transition-colors"
               >
                 {periodLabels[period]}
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
               </button>
               {isDropdownOpen && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-green-200 rounded-lg shadow-lg z-10 min-w-[140px]">
@@ -119,12 +119,12 @@ export function RevenueCard({ revenue, period, onPeriodChange, loading }: Revenu
       </div>
       {/* Curved transition */}
       <div
-        className="relative cursor-pointer w-full flex justify-center h-8 opacity-75"
+        className="relative cursor-pointer w-full flex justify-center h-7 md:h-8 opacity-75"
         onClick={() => router.push("/reports/sales")}
       >
-        <span className="flex gap-1 items-center text-sm">
-          View Full details <ChevronRight className="w-4 h-4" strokeWidth={3} />
-          <ChevronRight className="w-4 h-4 -ml-3" strokeWidth={3} />
+        <span className="flex gap-1 items-center text-xs md:text-sm">
+          View Full details <ChevronRight className="w-3 h-3 md:w-4 md:h-4" strokeWidth={3} />
+          <ChevronRight className="w-3 h-3 md:w-4 md:h-4 -ml-2 md:-ml-3" strokeWidth={3} />
         </span>
       </div>
     </div>

@@ -61,7 +61,7 @@ export default function EnhancedMedicineCard({
           {/* Medicine Image */}
           {medicine.medicine_image_url && (
             <div className="flex-shrink-0 ">
-              <div className="w-[9rem] h-[9rem] bg-white rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
+              <div className="w-[9rem] h-[9rem] max-[500px]:w-[7rem] max-[500px]:h-[7rem] bg-white rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
                 <img
                   src={medicine.medicine_image_url}
                   alt={medicine.name}
@@ -93,16 +93,16 @@ export default function EnhancedMedicineCard({
               <div className="flex items-center gap-3">
                 <Package className="h-6 w-6 text-gray-600" />
                 <div>
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-xs font-medium text-gray-700">
                     Stock Quantity
                   </p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-xl font-bold text-gray-900">
                     {stockInfo.totalQuantity}
                   </p>
                 </div>
               </div>
               <Badge
-                className={`text-base px-4 py-2 ${
+                className={`text-xs px-4 py-2 ${
                   stockInfo.isLowStock ? "bg-red-500" : "bg-green-500"
                 }`}
               >

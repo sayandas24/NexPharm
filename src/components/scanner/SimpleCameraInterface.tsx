@@ -25,83 +25,8 @@ export default function SimpleCameraInterface({
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Start camera
-  // const startCamera = async () => {
-  //   setIsLoading(true);
-  //   setError("");
-
-  //   try {
-  //     // Check if getUserMedia is supported
-  //     // if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-  //     //   throw new Error("Camera API not supported in this browser");
-  //     // }
-
-  //     // Stop existing stream if any
-  //     // if (streamRef.current) {
-  //     //   streamRef.current.getTracks().forEach((track) => track.stop());
-  //     // }
-
-  //     console.log("Requesting camera access...");
-
-  //     // Request camera with fallback constraints
-  //     let stream: MediaStream;
-  //     try {
-  //       stream = await navigator.mediaDevices.getUserMedia({
-  //         video: {
-  //           facingMode: facingMode,
-  //           width: { ideal: 1280 },
-  //           height: { ideal: 720 },
-  //         },
-  //         audio: false,
-  //       });
-  //     } catch (err) {
-  //       // Fallback: try without facingMode if it fails
-  //       console.log("Retrying without facingMode constraint...");
-  //       stream = await navigator.mediaDevices.getUserMedia({
-  //         video: {
-  //           width: { ideal: 1280 },
-  //           height: { ideal: 720 },
-  //         },
-  //         audio: false,
-  //       });
-  //     }
-
-  //     streamRef.current = stream;
-
-  //     // Set to video element
-  //     if (videoRef.current) {
-  //       const video = videoRef.current;
-  //       video.srcObject = stream;
-
-  //       // Force play
-  //       video.onloadedmetadata = () => {
-  //         console.log("Metadata loaded:", {
-  //           videoWidth: video.videoWidth,
-  //           videoHeight: video.videoHeight,
-  //           readyState: video.readyState,
-  //         });
-
-  //         video
-  //           .play()
-  //           .then(() => {
-  //             console.log("Video playing");
-  //             setIsReady(true);
-  //           })
-  //           .catch((err) => {
-  //             console.error("Play error:", err);
-  //             setError(`Play error: ${err.message}`);
-  //           });
-  //       };
-
-  //       setIsReady(true);
-  //     }
-  //   } catch (err: any) {
-  //     console.error("Camera error:", err);
-
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  
+  
   const startCamera = async () => {
     setError("");
 
@@ -116,30 +41,20 @@ export default function SimpleCameraInterface({
         audio: false,
       });
 
-      console.log("Stream obtained:", stream);
-      console.log("Video tracks:", stream.getVideoTracks());
-
       if (videoRef.current) {
         const video = videoRef.current;
 
         // Set srcObject directly
         video.srcObject = stream;
 
-        console.log("Stream set to video element");
         streamRef.current = stream;
 
         // Force play
         video.onloadedmetadata = () => {
-          console.log("Metadata loaded:", {
-            videoWidth: video.videoWidth,
-            videoHeight: video.videoHeight,
-            readyState: video.readyState,
-          });
 
           video
             .play()
             .then(() => {
-              console.log("Video playing");
               setIsReady(true);
             })
             .catch((err) => {
@@ -241,8 +156,8 @@ export default function SimpleCameraInterface({
         {/* Overlay guide */}
         {isReady && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="border-4 border-white/50 rounded-lg w-4/5 h-3/4 shadow-lg">
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm">
+            <div className="border-3 border-white/50 rounded-lg w-4/5 h-3/4 shadow-lg">
+              <div className="absolute top-2 text-nowrap left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-1 rounded-full text-xs">
                 Position medicine packaging within frame
               </div>
             </div>

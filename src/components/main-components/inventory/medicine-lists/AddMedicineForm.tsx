@@ -119,7 +119,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
       onSubmit={handleSubmit}
     >
       {({ errors, touched, isSubmitting, setFieldValue, values }) => (
-        <Form className="space-y-6 mt-6">
+        <Form className="space-y-6 mt-6 p-5">
           {/* Basic Information */}
           <Card className="p-4">
             <div className="flex items-center gap-2 mb-4">
@@ -128,7 +128,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <Label htmlFor="name">
+                <Label className="mb-2" htmlFor="name">
                   Medicine Name <span className="text-red-500">*</span>
                 </Label>
                 <Field
@@ -146,7 +146,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="generic_name">Generic Name</Label>
+                <Label className="mb-2" htmlFor="generic_name">Generic Name</Label>
                 <Field
                   as={Input}
                   id="generic_name"
@@ -156,7 +156,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="brand_names">Brand Names</Label>
+                <Label className="mb-2" htmlFor="brand_names">Brand Names</Label>
                 <Field
                   as={Input}
                   id="brand_names"
@@ -166,7 +166,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="manufacturer">Manufacturer</Label>
+                <Label className="mb-2" htmlFor="manufacturer">Manufacturer</Label>
                 <Field
                   as={Input}
                   id="manufacturer"
@@ -176,7 +176,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="category">Category</Label>
+                <Label className="mb-2" htmlFor="category">Category</Label>
                 <Select
                   onValueChange={(value) => setFieldValue("category", value)}
                   value={values.category || ""}
@@ -200,7 +200,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="barcode">Barcode</Label>
+                <Label className="mb-2" htmlFor="barcode">Barcode</Label>
                 <Field
                   as={Input}
                   id="barcode"
@@ -210,7 +210,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="strength">Strength</Label>
+                <Label className="mb-2" htmlFor="strength">Strength</Label>
                 <Field
                   as={Input}
                   id="strength"
@@ -220,7 +220,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="pack_size">Pack Size</Label>
+                <Label className="mb-2" htmlFor="pack_size">Pack Size</Label>
                 <Field
                   as={Input}
                   id="pack_size"
@@ -230,7 +230,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="shelf_life">Shelf Life</Label>
+                <Label className="mb-2" htmlFor="shelf_life">Shelf Life</Label>
                 <Field
                   as={Input}
                   id="shelf_life"
@@ -249,7 +249,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="mrp">MRP (₹)</Label>
+                <Label className="mb-2" htmlFor="mrp">MRP (₹)</Label>
                 <Field
                   as={Input}
                   type="number"
@@ -261,7 +261,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="price_range_min">Min Price (₹)</Label>
+                <Label className="mb-2" htmlFor="price_range_min">Min Price (₹)</Label>
                 <Field
                   as={Input}
                   type="number"
@@ -273,7 +273,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="price_range_max">Max Price (₹)</Label>
+                <Label className="mb-2" htmlFor="price_range_max">Max Price (₹)</Label>
                 <Field
                   as={Input}
                   type="number"
@@ -294,7 +294,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
             </div>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="how_to_use">How to Use</Label>
+                <Label className="mb-2" htmlFor="how_to_use">How to Use</Label>
                 <Field
                   as={Textarea}
                   id="how_to_use"
@@ -306,7 +306,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="dosage_adults">Dosage (Adults)</Label>
+                  <Label className="mb-2" htmlFor="dosage_adults">Dosage (Adults)</Label>
                   <Field
                     as={Input}
                     id="dosage_adults"
@@ -316,7 +316,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                 </div>
 
                 <div>
-                  <Label htmlFor="dosage_children">Dosage (Children)</Label>
+                  <Label className="mb-2" htmlFor="dosage_children">Dosage (Children)</Label>
                   <Field
                     as={Input}
                     id="dosage_children"
@@ -326,7 +326,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                 </div>
 
                 <div>
-                  <Label htmlFor="dosage_elderly">Dosage (Elderly)</Label>
+                  <Label className="mb-2" htmlFor="dosage_elderly">Dosage (Elderly)</Label>
                   <Field
                     as={Input}
                     id="dosage_elderly"
@@ -337,7 +337,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="duration">Duration</Label>
+                <Label className="mb-2" htmlFor="duration">Duration</Label>
                 <Field
                   as={Input}
                   id="duration"
@@ -356,7 +356,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
             </div>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="side_effects">Side Effects</Label>
+                <Label className="mb-2" htmlFor="side_effects">Side Effects</Label>
                 <Field
                   as={Textarea}
                   id="side_effects"
@@ -367,7 +367,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="warnings">Warnings & Precautions</Label>
+                <Label className="mb-2" htmlFor="warnings">Warnings & Precautions</Label>
                 <Field
                   as={Textarea}
                   id="warnings"
@@ -387,7 +387,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
             </div>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="medicine_image_url">Medicine Image URL</Label>
+                <Label className="mb-2" htmlFor="medicine_image_url">Medicine Image URL</Label>
                 <Field
                   as={Input}
                   id="medicine_image_url"
@@ -398,7 +398,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="package_image_url">Package Image URL</Label>
+                <Label className="mb-2" htmlFor="package_image_url">Package Image URL</Label>
                 <Field
                   as={Input}
                   id="package_image_url"
@@ -409,7 +409,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="medicine_images">
+                <Label className="mb-2" htmlFor="medicine_images">
                   Additional Images (JSON array)
                 </Label>
                 <Field
@@ -422,7 +422,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="tags">Tags (comma-separated)</Label>
+                <Label className="mb-2" htmlFor="tags">Tags (comma-separated)</Label>
                 <Field
                   as={Input}
                   id="tags"
@@ -445,9 +445,9 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                     setFieldValue("requires_prescription", checked ? 1 : 0)
                   }
                 />
-                <Label
+                <Label 
                   htmlFor="requires_prescription"
-                  className="cursor-pointer"
+                  className="cursor-pointer mb-2"
                 >
                   Requires Prescription (Rx)
                 </Label>
@@ -461,7 +461,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                     setFieldValue("is_otc", checked ? 1 : 0)
                   }
                 />
-                <Label htmlFor="is_otc" className="cursor-pointer">
+                <Label  htmlFor="is_otc" className="cursor-pointer mb-2">
                   Over-the-Counter (OTC) Medicine
                 </Label>
               </div>
@@ -474,7 +474,7 @@ export function AddMedicineForm({ onSuccess, pharmacy }: AddMedicineFormProps) {
                     setFieldValue("is_active", checked ? 1 : 0)
                   }
                 />
-                <Label htmlFor="is_active" className="cursor-pointer">
+                <Label  htmlFor="is_active" className="cursor-pointer mb-2">
                   Active in Inventory
                 </Label>
               </div>

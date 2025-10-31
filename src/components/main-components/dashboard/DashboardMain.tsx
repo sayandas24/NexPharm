@@ -90,7 +90,7 @@ export function DashboardMain() {
       </div>
 
       {/* Quick Actions Section */}
-      <QuickActions/>
+      <QuickActions />
     </div>
   );
 }

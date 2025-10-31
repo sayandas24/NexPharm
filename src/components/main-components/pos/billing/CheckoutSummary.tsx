@@ -108,7 +108,7 @@ export function CheckoutSummary({
         <Button
           onClick={handleCheckout}
           disabled={disabled}
-          className="w-full mt-4"
+          className="w-full mt-4 bg-purple-800 hover:bg-purple-900"
           size="lg"
         >
           Complete Sale
