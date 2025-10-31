@@ -109,6 +109,7 @@ export default function SimpleCameraInterface({
       // Simple camera request
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
+          facingMode: facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -125,7 +126,7 @@ export default function SimpleCameraInterface({
         video.srcObject = stream;
 
         console.log("Stream set to video element");
-        streamRef.current = stream
+        streamRef.current = stream;
 
         // Force play
         video.onloadedmetadata = () => {
@@ -166,22 +167,22 @@ export default function SimpleCameraInterface({
   };
 
   // Initialize on mount
-  // useEffect(() => {
-  //   startCamera();
-  //   return () => stopCamera();
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [facingMode]);
+  useEffect(() => {
+    startCamera();
+    return () => stopCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Capture image
   const handleCapture = () => {
     if (!videoRef.current || !streamRef.current) {
       return;
     }
-    console.log("Capturing image...");
 
     const imageData = captureImageFromVideo(videoRef.current);
     console.log("Image data:", imageData);
     if (imageData) {
+      stopCamera();
       onCapture(imageData);
     } else {
       setError("Failed to capture image");
@@ -190,7 +191,12 @@ export default function SimpleCameraInterface({
 
   // Switch camera
   const switchCamera = () => {
+    stopCamera();
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+    setTimeout(() => {
+      console.log("Switching camera...", facingMode);
+      startCamera();
+    }, 300);
   };
 
   // Loading state
@@ -219,8 +225,6 @@ export default function SimpleCameraInterface({
 
   return (
     <div className="relative w-full">
-      <Button onClick={startCamera}>Start Camera</Button>
-      <Button onClick={stopCamera}>Stop Camera</Button>
       {/* Video Preview */}
       <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
         <video
@@ -280,7 +284,7 @@ export default function SimpleCameraInterface({
         <Button
           size="lg"
           onClick={handleCapture}
-          // disabled={isProcessing || !isReady}
+          disabled={isProcessing || !isReady}
           className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600"
         >
           <Camera className="h-8 w-8" />
