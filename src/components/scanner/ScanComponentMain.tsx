@@ -341,7 +341,7 @@ export default function ScanComponentMain({ currentPharmacy }: any) {
   }
 
   return (
-    <div className="p-6 bg-white  max-w-4xl mx-auto max-[500px]:p-3">
+    <div className="p-6 bg-white  max-w-4xl mx-auto max-[500px]:p-3 ">
       {/* Header */}
       {(workflowState === "idle" ||
         workflowState === "camera_initializing" ||
