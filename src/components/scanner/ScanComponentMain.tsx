@@ -562,7 +562,7 @@ const QuickBillComponent = ({
 }: any) => {
   return (
     <Dialog open={billOpen} onOpenChange={setBillOpen}>
-      <DialogContent className="min-w-[99vw] min-h-[93vh] overflow-y-auto p-0">
+      <DialogContent className="min-w-[99vw] max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Quick Bill</DialogTitle>
         </DialogHeader>

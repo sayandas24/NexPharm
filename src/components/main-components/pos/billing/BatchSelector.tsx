@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -123,87 +129,196 @@ export function BatchSelector({
     if (daysUntilExpiry < 0) return "text-red-600 font-semibold";
     if (daysUntilExpiry < 30) return "text-red-500";
     if (daysUntilExpiry < 90) return "text-yellow-600";
-    return "text-gray-700";
+    return "text-purple-700";
   };
 
   return (
     <Sheet open={!!medicine} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Select Batch</SheetTitle>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-2xl lg:max-w-3xl overflow-y-auto bg-white p-3 sm:p-4"
+      >
+        <SheetHeader className="border-b border-purple-100 pb-3">
+          <SheetTitle className="text-lg sm:text-xl text-purple-900">
+            Select Batch
+          </SheetTitle>
           {medicine && (
-            <div className="text-sm text-muted-foreground">
-              <div className="font-medium">{medicine.name}</div>
-              {medicine.generic_name && <div>{medicine.generic_name}</div>}
+            <div className="text-xs sm:text-sm mt-1">
+              <div className="font-semibold text-purple-800">
+                {medicine.name}
+              </div>
+              {medicine.generic_name && (
+                <div className="text-purple-600">{medicine.generic_name}</div>
+              )}
             </div>
           )}
         </SheetHeader>
 
-        <div className="mt-6">
+        <div className="mt-4">
           {loading ? (
-            <p className="text-center text-muted-foreground">Loading batches...</p>
+            <p className="text-center text-purple-600 py-8 text-sm">
+              Loading batches...
+            </p>
           ) : batches.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No batches available for this medicine</p>
+              <p className="text-purple-500 text-sm">
+                No batches available for this medicine
+              </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Batch No.</TableHead>
-                  <TableHead>Expiry Date</TableHead>
-                  <TableHead>Available</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>MRP</TableHead>
-                  <TableHead>GST %</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block border border-purple-200 rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-purple-50 hover:bg-purple-50">
+                      <TableHead className="text-purple-900 font-semibold text-xs">
+                        Batch No.
+                      </TableHead>
+                      <TableHead className="text-purple-900 font-semibold text-xs">
+                        Expiry
+                      </TableHead>
+                      <TableHead className="text-purple-900 font-semibold text-xs">
+                        Avail.
+                      </TableHead>
+                      <TableHead className="text-purple-900 font-semibold text-xs">
+                        Price
+                      </TableHead>
+                      <TableHead className="text-purple-900 font-semibold text-xs">
+                        MRP
+                      </TableHead>
+                      <TableHead className="text-purple-900 font-semibold text-xs">
+                        GST
+                      </TableHead>
+                      <TableHead className="text-purple-900 font-semibold text-xs">
+                        Qty
+                      </TableHead>
+                      <TableHead className="text-purple-900 font-semibold text-xs">
+                        Action
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {batches.map((batch) => (
+                      <TableRow key={batch.id} className="hover:bg-purple-50">
+                        <TableCell className="font-semibold text-purple-900 text-xs">
+                          {batch.batch_number}
+                        </TableCell>
+                        <TableCell className={`${getExpiryColor(batch.expiry_date)} text-xs`}>
+                          {new Date(batch.expiry_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}
+                        </TableCell>
+                        <TableCell className="text-purple-700 font-medium text-xs">
+                          {batch.available_quantity}
+                        </TableCell>
+                        <TableCell className="text-purple-700 text-xs">
+                          ₹{batch.selling_price.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-purple-700 text-xs">
+                          ₹{batch.mrp.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-purple-700 text-xs">
+                          {batch.gst_percentage}%
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <Input
+                              type="number"
+                              min="1"
+                              max={batch.available_quantity}
+                              value={quantities[batch.id] || 1}
+                              onChange={(e) =>
+                                handleQuantityChange(batch.id, e.target.value)
+                              }
+                              className="w-16 h-8 text-xs border-purple-300 focus:border-purple-500"
+                            />
+                            {errors[batch.id] && (
+                              <p className="text-xs text-red-500 mt-0.5">
+                                {errors[batch.id]}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            onClick={() => handleSelect(batch)}
+                            className="bg-purple-600 hover:bg-purple-700 text-white h-7 text-xs"
+                          >
+                            Add
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
                 {batches.map((batch) => (
-                  <TableRow key={batch.id}>
-                    <TableCell className="font-medium">
-                      {batch.batch_number}
-                    </TableCell>
-                    <TableCell className={getExpiryColor(batch.expiry_date)}>
-                      {new Date(batch.expiry_date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{batch.available_quantity}</TableCell>
-                    <TableCell>₹{batch.selling_price.toFixed(2)}</TableCell>
-                    <TableCell>₹{batch.mrp.toFixed(2)}</TableCell>
-                    <TableCell>{batch.gst_percentage}%</TableCell>
-                    <TableCell>
-                      <div>
-                        <Input
-                          type="number"
-                          min="1"
-                          max={batch.available_quantity}
-                          value={quantities[batch.id] || 1}
-                          onChange={(e) =>
-                            handleQuantityChange(batch.id, e.target.value)
-                          }
-                          className="w-20"
-                        />
-                        {errors[batch.id] && (
-                          <p className="text-xs text-red-500 mt-1">
-                            {errors[batch.id]}
+                  <Card key={batch.id} className="p-3 border-purple-200">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-purple-900 text-sm">
+                            {batch.batch_number}
                           </p>
-                        )}
+                          <p className={`${getExpiryColor(batch.expiry_date)} text-xs mt-0.5`}>
+                            Exp: {new Date(batch.expiry_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}
+                          </p>
+                        </div>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                          {batch.available_quantity} avail.
+                        </span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSelect(batch)}
-                      >
-                        Add
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                      
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Price:</span>
+                          <p className="font-medium">₹{batch.selling_price.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">MRP:</span>
+                          <p className="font-medium">₹{batch.mrp.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">GST:</span>
+                          <p className="font-medium">{batch.gst_percentage}%</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 items-end pt-2 border-t">
+                        <div className="flex-1">
+                          <Label htmlFor={`qty-${batch.id}`} className="text-xs">Quantity</Label>
+                          <Input
+                            id={`qty-${batch.id}`}
+                            type="number"
+                            min="1"
+                            max={batch.available_quantity}
+                            value={quantities[batch.id] || 1}
+                            onChange={(e) =>
+                              handleQuantityChange(batch.id, e.target.value)
+                            }
+                            className="h-8 text-sm border-purple-300"
+                          />
+                          {errors[batch.id] && (
+                            <p className="text-xs text-red-500 mt-0.5">
+                              {errors[batch.id]}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          onClick={() => handleSelect(batch)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white h-8 px-4 text-sm"
+                        >
+                          Add to Cart
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </div>
       </SheetContent>

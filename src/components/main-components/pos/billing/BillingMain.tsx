@@ -100,94 +100,37 @@ export function BillingMain({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
-      <div className="container mx-auto p-6 max-w-7xl">
+      <div className="container mx-auto p-3 sm:p-4 lg:p-6 max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-purple-900 mb-2">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-900">
             Point of Sale
           </h1>
-          <p className="text-purple-600">Create and manage pharmacy sales</p>
+          <p className="text-xs sm:text-sm text-purple-600 mt-1">
+            Create and manage pharmacy sales
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
           {/* Left Column - Customer & Medicine Search */}
-          <div className="xl:col-span-2 space-y-6">
-            {/* Customer Section */}
-            <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-6 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-purple-900">
-                  Customer Information
-                </h3>
-              </div>
-              <CustomerForm
-                onCustomerSelect={handleCustomerSelect}
-                pharmacyId={pharmacyId}
-                searchCustomerByPhoneOrName={searchCustomerByPhoneOrName as any}
-                createCustomer={createCustomer}
-              />
-            </div>
-
-            {/* Medicine Search Section */}
-            <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-6 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-purple-900">
-                  Search Medicine
-                </h3>
-              </div>
-              <MedicineSearch
-                pharmacyId={pharmacyId}
-                onMedicineSelect={handleMedicineSelect}
-                searchMedicinesByName={searchMedicinesByName as any}
-              />
-            </div>
-
-            {/* Current Customer Badge */}
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+            {/* Current Customer Badge - Mobile First */}
             {customer && (
-              <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-2xl shadow-md border-2 border-purple-200 p-6 animate-in fade-in slide-in-from-top duration-300">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+              <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-3 sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                       {customer.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-purple-900 text-lg">
-                        Current Customer
-                      </h4>
-                      <p className="text-purple-700 font-medium">
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm text-purple-600 font-medium">
+                        Customer
+                      </p>
+                      <p className="text-sm sm:text-base text-purple-900 font-semibold truncate">
                         {customer.name}
                       </p>
                       {customer.phone && (
-                        <p className="text-sm text-purple-600 mt-1">
+                        <p className="text-xs text-purple-600">
                           {customer.phone}
                         </p>
                       )}
@@ -195,7 +138,7 @@ export function BillingMain({
                   </div>
                   <button
                     onClick={() => setCustomer(null)}
-                    className="text-purple-400 hover:text-purple-600 transition-colors"
+                    className="text-purple-400 hover:text-purple-600 p-1 flex-shrink-0"
                   >
                     <svg
                       className="w-5 h-5"
@@ -214,16 +157,75 @@ export function BillingMain({
                 </div>
               </div>
             )}
+
+            {/* Customer Section */}
+            <div className="bg-white rounded-lg shadow border border-purple-100 p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-4 h-4 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-sm sm:text-base font-semibold text-purple-900">
+                  Customer
+                </h3>
+              </div>
+              <CustomerForm
+                onCustomerSelect={handleCustomerSelect}
+                pharmacyId={pharmacyId}
+                searchCustomerByPhoneOrName={searchCustomerByPhoneOrName as any}
+                createCustomer={createCustomer}
+              />
+            </div>
+
+            {/* Medicine Search Section */}
+            <div className="bg-white rounded-lg shadow border border-purple-100 p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-4 h-4 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-sm sm:text-base font-semibold text-purple-900">
+                  Search Medicine
+                </h3>
+              </div>
+              <MedicineSearch
+                pharmacyId={pharmacyId}
+                onMedicineSelect={handleMedicineSelect}
+                searchMedicinesByName={searchMedicinesByName as any}
+              />
+            </div>
           </div>
 
           {/* Right Column - Cart & Checkout */}
-          <div className="space-y-6">
+          <div className="space-y-3 sm:space-y-4">
             {/* Cart Section */}
-            <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-6 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow border border-purple-100 p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <svg
-                    className="w-5 h-5 text-purple-600"
+                    className="w-4 h-4 text-purple-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -236,11 +238,11 @@ export function BillingMain({
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-purple-900">
-                  Shopping Cart
+                <h3 className="text-sm sm:text-base font-semibold text-purple-900">
+                  Cart
                 </h3>
                 {cart.length > 0 && (
-                  <span className="ml-auto bg-purple-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                  <span className="ml-auto bg-purple-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                     {cart.length}
                   </span>
                 )}
@@ -253,11 +255,11 @@ export function BillingMain({
             </div>
 
             {/* Checkout Section */}
-            <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-6 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow border border-purple-100 p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <svg
-                    className="w-5 h-5 text-purple-600"
+                    className="w-4 h-4 text-purple-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -270,8 +272,8 @@ export function BillingMain({
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-purple-900">
-                  Checkout Summary
+                <h3 className="text-sm sm:text-base font-semibold text-purple-900">
+                  Checkout
                 </h3>
               </div>
               <CheckoutSummary

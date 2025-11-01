@@ -130,86 +130,84 @@ export function CustomerForm({
   };
 
   return (
-    <Card className="p-4">
-      <h3 className="text-lg font-semibold mb-4">Customer Details</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="relative">
-          <Label className="mb-2" htmlFor="name">
-            Name <span className="text-red-500">*</span>
-          </Label>
-          <Input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter customer name"
-            required
-          />
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="relative">
+        <Label className="text-xs sm:text-sm mb-1" htmlFor="name">
+          Name <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Customer name"
+          className="h-9 text-sm"
+          required
+        />
+      </div>
 
-        <div className="relative">
-          <Label className="mb-2" htmlFor="phone">
-            Phone Number
-          </Label>
-          <Input
-            id="phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Enter phone number"
-          />
+      <div className="relative">
+        <Label className="text-xs sm:text-sm mb-1" htmlFor="phone">
+          Phone Number
+        </Label>
+        <Input
+          id="phone"
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Phone number"
+          className="h-9 text-sm"
+        />
 
-          {selectedCustomer && (
-            <div className="mt-1 p-2 bg-green-50 border border-green-200 rounded">
-              <p className="text-xs text-green-700 font-medium">
-                ✓ Existing customer selected
-              </p>
-            </div>
-          )}
+        {selectedCustomer && (
+          <div className="mt-1 p-1.5 bg-green-50 border border-green-200 rounded">
+            <p className="text-xs text-green-700 font-medium">
+              ✓ Existing customer
+            </p>
+          </div>
+        )}
 
-          {/* Search Results Dropdown */}
-          {showResults && searchResults.length > 0 && !selectedCustomer && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-green-300 rounded-md shadow-lg max-h-60 overflow-y-auto min-h-[10rem] py-4 ">
-              <div className="justify-between items-center flex px-2 mb-2">
-                <div className="text-green-400 text-xs">
-                  Existing Customers found
-                </div>
-                <CircleX
-                  size={16}
-                  onClick={() => setShowResults(false)}
-                  className="text-red-400 hover:text-red-500 cursor-pointer"
-                />
+        {/* Search Results Dropdown */}
+        {showResults && searchResults.length > 0 && !selectedCustomer && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-green-300 rounded-md shadow-lg max-h-48 overflow-y-auto py-2">
+            <div className="justify-between items-center flex px-2 mb-1">
+              <div className="text-green-600 text-xs font-medium">
+                Found customers
               </div>
-              {searchResults.map((customer) => (
-                <div
-                  key={customer.id}
-                  onClick={() => handleSelectCustomer(customer)}
-                  className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                >
-                  <p className="text-sm font-medium text-gray-900">
-                    {customer.name}
-                  </p>
-                  {customer.phone && (
-                    <p className="text-xs text-gray-600">{customer.phone}</p>
-                  )}
-                  {customer.email && (
-                    <p className="text-xs text-gray-500">{customer.email}</p>
-                  )}
-                </div>
-              ))}
+              <CircleX
+                size={14}
+                onClick={() => setShowResults(false)}
+                className="text-red-400 hover:text-red-500 cursor-pointer"
+              />
             </div>
+            {searchResults.map((customer) => (
+              <div
+                key={customer.id}
+                onClick={() => handleSelectCustomer(customer)}
+                className="p-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+              >
+                <p className="text-xs sm:text-sm font-medium text-gray-900">
+                  {customer.name}
+                </p>
+                {customer.phone && (
+                  <p className="text-xs text-gray-600">{customer.phone}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showResults &&
+          searchResults.length === 0 &&
+          !isSearching &&
+          (name?.length >= 2 || phone?.length >= 2) && (
+            <p className="text-xs text-gray-500 mt-1">No customers found</p>
           )}
+      </div>
 
-          {showResults &&
-            searchResults.length === 0 &&
-            !isSearching &&
-            (name?.length >= 2 || phone?.length >= 2) && (
-              <p className="text-xs text-gray-500 mt-1">No customers found</p>
-            )}
-        </div>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <Label className="mb-2" htmlFor="email">
+          <Label className="text-xs sm:text-sm mb-1" htmlFor="email">
             Email
           </Label>
           <Input
@@ -217,12 +215,13 @@ export function CustomerForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter email (optional)"
+            placeholder="Email (optional)"
+            className="h-9 text-sm"
           />
         </div>
 
         <div>
-          <Label className="mb-2" htmlFor="dob">
+          <Label className="text-xs sm:text-sm mb-1" htmlFor="dob">
             Date of Birth
           </Label>
           <Input
@@ -230,18 +229,19 @@ export function CustomerForm({
             type="date"
             value={dateOfBirth}
             onChange={(e) => setDateOfBirth(e.target.value)}
+            className="h-9 text-sm"
           />
         </div>
+      </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-xs text-red-500">{error}</p>}
 
-        <Button
-          type="submit"
-          className="w-full bg-purple-800 hover:bg-purple-900 text-white font-medium !py-4 px-4 rounded-md"
-        >
-          {selectedCustomer ? "Use Customer" : "Add Customer"}
-        </Button>
-      </form>
-    </Card>
+      <Button
+        type="submit"
+        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium h-9 text-sm"
+      >
+        {selectedCustomer ? "Use Customer" : "Add Customer"}
+      </Button>
+    </form>
   );
 }
