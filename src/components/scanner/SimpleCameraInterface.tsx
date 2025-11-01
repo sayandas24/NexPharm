@@ -48,7 +48,7 @@ export default function SimpleCameraInterface({
       const constraints: MediaStreamConstraints = {
         video: deviceId
           ? {
-              deviceId: { exact: deviceId },
+              deviceId: deviceId, // Changed from { exact: deviceId }
               width: { ideal: 1280 },
               height: { ideal: 720 },
             }
@@ -83,6 +83,13 @@ export default function SimpleCameraInterface({
       return stream;
     } catch (err: any) {
       console.error("Camera error:", err);
+      
+      // If it's an OverconstrainedError and we were trying a specific device, retry without it
+      if (err.name === 'OverconstrainedError' && deviceId) {
+        console.log("Retrying without device constraint");
+        return startCamera(); // Retry without device ID
+      }
+      
       setError(`Error: ${err.name} - ${err.message}`);
       onError(err);
       throw err;
@@ -285,7 +292,7 @@ export default function SimpleCameraInterface({
     // Re-enumerate after switching
     const videoDevices = await enumerateDevices();
     setAvailableDevices(videoDevices);
-  };
+  }; 
 
   if (error) {
     return (
@@ -333,7 +340,7 @@ export default function SimpleCameraInterface({
       </div>
 
       <div className="flex flex-col items-center gap-4 mt-4">
-        {availableDevices.length > 1 && (
+        {availableDevices.length > 0 && (
           <div className="w-full max-w-xs">
             <Select
               value={selectedDeviceId}
@@ -353,7 +360,7 @@ export default function SimpleCameraInterface({
               </SelectContent>
             </Select>
           </div>
-        )}
+        )} 
 
         <div className="flex items-center justify-center gap-4">
           <Button

@@ -1,6 +1,9 @@
 // Medicine Match Service
 
-import { MedicineMatch, PharmacyMedicineWithDetails } from "@/types/scanner-types";
+import {
+  MedicineMatch,
+  PharmacyMedicineWithDetails,
+} from "@/types/scanner-types";
 import {
   calculateMatchConfidence,
   extractPotentialNames,
@@ -24,7 +27,6 @@ class MedicineMatchService {
 
     // Extract potential medicine names from OCR text
     const potentialNames = extractPotentialNames(extractedText);
-    console.log("Potential medicine names:", potentialNames);
 
     // Also include the full text for matching
     const searchTerms = [extractedText, ...potentialNames];
@@ -40,49 +42,19 @@ class MedicineMatchService {
           medicine.name
         );
 
-        // Match against generic name if available
-        let genericConfidence = 0;
-        if (medicine.generic_name) {
-          genericConfidence = calculateMatchConfidence(
-            searchTerm,
-            medicine.generic_name
-          );
-        }
-
-        // Match against brand names if available
-        let brandConfidence = 0;
-        if (medicine.brand_names) {
-          const brands = medicine.brand_names.split(",");
-          for (const brand of brands) {
-            const conf = calculateMatchConfidence(searchTerm, brand.trim());
-            brandConfidence = Math.max(brandConfidence, conf);
-          }
-        }
-
         // Take the highest confidence score
-        const confidence = Math.max(
-          nameConfidence,
-          genericConfidence,
-          brandConfidence
-        );
+        const confidence = Math.max(nameConfidence);
 
         // Only include matches with confidence >= 60%
         if (confidence >= 60) {
-          // Determine which field matched best
-          let matchedText = medicine.name;
-          if (genericConfidence === confidence && medicine.generic_name) {
-            matchedText = medicine.generic_name;
-          } else if (brandConfidence === confidence && medicine.brand_names) {
-            matchedText = medicine.brand_names.split(",")[0].trim();
-          }
-
           allMatches.push({
             medicine,
             confidence,
-            matchedText,
+            matchedText: medicine.name,
             matchType: getMatchType(confidence),
           });
         }
+        console.log(allMatches, "allMatches");
       }
     }
 

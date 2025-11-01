@@ -78,7 +78,6 @@ export class AuthCacheService {
     try {
       const cached = localStorage.getItem(this.CACHE_KEY);
       if (!cached) {
-        console.log("📦 No cached auth data found");
         return null;
       }
 
@@ -94,7 +93,6 @@ export class AuthCacheService {
         return null;
       }
 
-      console.log("✅ Loaded valid cached auth data");
       return parsed;
     } catch (error) {
       console.error("❌ Error reading cache:", error);
@@ -119,7 +117,6 @@ export class AuthCacheService {
       };
 
       localStorage.setItem(this.CACHE_KEY, JSON.stringify(cacheData));
-      console.log("💾 Cached auth data updated");
     } catch (error: any) {
       if (error.name === "QuotaExceededError") {
         console.warn("⚠️ localStorage quota exceeded, clearing and retrying");
@@ -133,7 +130,6 @@ export class AuthCacheService {
             ...data,
           };
           localStorage.setItem(this.CACHE_KEY, JSON.stringify(cacheData));
-          console.log("💾 Cached auth data updated after clearing");
         } catch (retryError) {
           console.error("❌ Failed to cache after clearing:", retryError);
         }
@@ -153,7 +149,6 @@ export class AuthCacheService {
 
     try {
       localStorage.removeItem(this.CACHE_KEY);
-      console.log("🗑️ Cleared auth cache");
     } catch (error) {
       console.error("❌ Error clearing cache:", error);
     }

@@ -121,6 +121,10 @@ export function extractPotentialNames(ocrText: string): string[] {
     "pack",
     "strip",
     "bottle",
+    "net",
+    "tablet",
+    "quantity",
+    "fssai",
   ]);
 
   // Split into words and filter
