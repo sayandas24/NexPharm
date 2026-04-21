@@ -1,5 +1,9 @@
-// lib/powersync/client.ts
-import { PowerSyncDatabase } from "@powersync/web";
+// lib/powersync/PowersyncClient.ts
+import {
+  PowerSyncDatabase,
+  WASQLiteOpenFactory,
+  WASQLiteVFS,
+} from "@powersync/web";
 import { wrapPowerSyncWithKysely } from "@powersync/kysely-driver";
 import { Kysely } from "kysely";
 import { AppSchema } from "./schema";
@@ -15,7 +19,6 @@ export class PowerSyncClient {
   private isInitialized: boolean = false;
 
   private constructor() {
-    // Only initialize if we're in the browser
     if (typeof window === "undefined") {
       console.warn("⚠️ PowerSync cannot be initialized on the server");
       return;
@@ -23,20 +26,30 @@ export class PowerSyncClient {
 
     console.log("🔧 Creating PowerSync instance...");
 
-    // Check if SharedWorker is supported (not available on mobile browsers)
+    // SharedWorker enables multi-tab sync; not available on all mobile browsers
     const supportsSharedWorker = typeof SharedWorker !== "undefined";
-
     if (!supportsSharedWorker) {
-      console.log("📱 Mobile browser detected - disabling multi-tab support");
+      console.log("📱 SharedWorker unavailable — disabling multi-tab support");
     }
 
-    // Initialize PowerSync database
+    /**
+     * Use WASQLiteOpenFactory with OPFSCoopSyncVFS (recommended):
+     *  - Supports all major browsers including Safari
+     *  - Reliable multi-tab behaviour when SharedWorker is available
+     *  - Better performance than IDBBatchAtomicVFS (IndexedDB-based default)
+     *
+     * NOTE: The old `database: { dbFilename, dbLocation: "indexeddb" }` shorthand
+     * with `dbLocation: "indexeddb"` was INVALID and caused the socketStream error.
+     */
     this.powerSyncDb = new PowerSyncDatabase({
-      database: {
-        dbFilename: "pharmacy.db",
-        dbLocation: "indexeddb",
-      },
       schema: AppSchema,
+      database: new WASQLiteOpenFactory({
+        dbFilename: "streaming-sync-sync-pharmacy.db",
+        vfs: WASQLiteVFS.OPFSCoopSyncVFS,
+        flags: {
+          enableMultiTabs: supportsSharedWorker,
+        },
+      }),
       flags: {
         enableMultiTabs: supportsSharedWorker,
       },
@@ -51,10 +64,10 @@ export class PowerSyncClient {
     this.supabaseConnector = new SupabaseConnector();
   }
 
+  /** Returns the singleton instance (browser-only). */
   public static getInstance(): PowerSyncClient {
-    // Only create instance in browser
     if (typeof window === "undefined") {
-      // Return a dummy instance for SSR
+      // Return an empty shell for SSR — never used for actual DB ops
       return {} as PowerSyncClient;
     }
 
@@ -64,8 +77,8 @@ export class PowerSyncClient {
     return PowerSyncClient.instance;
   }
 
+  /** Initialize the database and connect to the backend. */
   async init(): Promise<void> {
-    // Skip initialization on server
     if (typeof window === "undefined") {
       console.warn("⚠️ Skipping PowerSync init on server");
       return;
@@ -119,23 +132,33 @@ export class PowerSyncClient {
   }
 }
 
-// Export singleton instance getter (lazy-loaded)
-let _powerSyncClient: PowerSyncClient | null = null;
+// ─── Lazy singleton accessor ───────────────────────────────────────────────
 
+/**
+ * Always use getPowerSyncClient() instead of importing `powerSyncClient`
+ * directly at module level. The direct export is kept only for backwards
+ * compatibility with existing imports but is safe because the factory
+ * is called lazily at runtime inside a browser-only guard.
+ */
 export const getPowerSyncClient = (): PowerSyncClient => {
-  if (!_powerSyncClient) {
-    _powerSyncClient = PowerSyncClient.getInstance();
-  }
-  return _powerSyncClient;
+  return PowerSyncClient.getInstance();
 };
 
-// For backward compatibility
+/**
+ * Module-level singleton — safe because PowerSyncClient.getInstance()
+ * returns an empty shell on the server and the real instance in the browser.
+ * The actual PowerSyncDatabase is only created inside the constructor which
+ * is guarded by `typeof window === "undefined"`.
+ */
 export const powerSyncClient =
   typeof window !== "undefined"
     ? PowerSyncClient.getInstance()
     : ({} as PowerSyncClient);
 
-// Export Kysely db for direct use (only in browser)
+/**
+ * Kysely db instance — only populated in the browser.
+ * Access via usePowerSync() hook in components instead of this export.
+ */
 export const db =
   typeof window !== "undefined"
     ? powerSyncClient.db

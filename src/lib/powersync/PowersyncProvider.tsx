@@ -63,7 +63,7 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
     }
 
     let mounted = true;
-    let statusListener: any = null;
+    let unsubscribeListener: (() => void) | null = null;
 
     const initializePowerSync = async () => {
       try {
@@ -74,8 +74,8 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
 
         if (!mounted) return;
 
-        // Register status listener to track connection state
-        statusListener = powerSyncClient.powerSyncDb.registerListener({
+        // registerListener now returns an unsubscribe function in SDK ≥ 1.13
+        unsubscribeListener = powerSyncClient.powerSyncDb.registerListener({
           initialized: () => {
             console.log("📱 PowerSync database initialized");
           },
@@ -88,7 +88,7 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
             });
 
             setIsConnected(status.connected);
-            setIsConnecting(false); // Stop showing connecting state once we get a status
+            setIsConnecting(false);
             setSyncStatus({
               connected: status.connected,
               lastSyncedAt: status.lastSyncedAt
@@ -96,7 +96,6 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
                 : null,
             });
 
-            // Clear error if connected successfully
             if (status.connected) {
               setError(null);
             }
@@ -118,12 +117,11 @@ export function PowerSyncProvider({ children }: PropsWithChildren) {
 
     initializePowerSync();
 
-    // Cleanup
     return () => {
       mounted = false;
-      if (statusListener) {
+      if (unsubscribeListener) {
         console.log("🧹 Cleaning up PowerSync status listener");
-        // Note: PowerSync doesn't have an unregister method, listener will be cleaned up on disconnect
+        unsubscribeListener();
       }
     };
   }, []);
