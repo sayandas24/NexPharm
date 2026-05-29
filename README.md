@@ -44,7 +44,7 @@ Pharmacy inventory should not fail when the internet does. NexPharm acts as a hi
 
 ---
 
-## ✦ Highlighted Feature: Offline-First Synchronization
+## ✦ Offline-First Synchronization
 
 NexPharm is engineered around a local-first paradigm. Pharmacy checkout workflows function instantly without any network delays.
 
@@ -79,12 +79,16 @@ pharmacy-inventory/
 
 ---
 
-## ✦ Visual Tour
-
 ### ✦ Feature Catalog
+---
+A complete overview of NexPharm’s core capabilities — from barcode & OCR scanning to real-time sync, GST billing, analytics, alerts, and multi-pharmacy management — all built for modern pharmacy operations.
+
 ![Features](public/images/nexpharm-features.png)
 ---
 ### ✦ High-Level System Design
+---
+An architectural overview of how NexPharm works under the hood, including offline-first synchronization, PowerSync data flow, Supabase integration, local IndexedDB caching, and scalable multi-tenant infrastructure.
+
 ![System Architecture](public/images/nexpharm-system-architecture.png)
 
 ---
