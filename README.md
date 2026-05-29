@@ -1,77 +1,114 @@
-# 🏥 NexPharm - Next-Generation Pharmacy Management System
+# 🏥 NexPharm
 
-A modern, real-time pharmacy inventory and POS management system built with Next.js, Supabase, and PowerSync for seamless offline-first functionality.
+> A state-of-the-art, **offline-first pharmacy inventory and POS management system** designed for modern, high-volume pharmacy operations. 
 
-![NexPharm](https://img.shields.io/badge/Version-1.0.0-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![NexPharm Banner](public/images/nexpharm-banner.png)
 
-## 🌟 Features
+---
 
-### Core Functionality
-- 💊 **Medicine Inventory Management** - Complete CRUD operations with batch tracking
-- 🏷️ **Barcode Scanning** - Quick medicine lookup using barcode scanner integration
-- 📦 **Batch & Expiry Tracking** - Automatic tracking of medicine batches and expiration dates
-- 🛒 **Point of Sale (POS) System** - Fast billing with real-time stock updates
-- 📄 **GST-Compliant Invoicing** - Generate tax-compliant invoices
+## ✦ Vision
 
-### Smart Features
-- 🔔 **Automated Alerts System**
-  - 15/30/90 day expiry warnings
-  - Low stock notifications
-  - Browser push notifications
-- 📊 **Analytics Dashboard**
-  - Sales reports (daily/weekly/monthly)
-  - Revenue tracking
-  - Top-selling medicines
-  - Inventory value overview
-- 👥 **Multi-User Support**
-  - Role-based access control
-  - Pharmacy-specific data isolation
-- 🔄 **Real-Time Sync** - PowerSync integration for offline-first functionality
-- 📱 **Mobile Responsive** - Works seamlessly on all devices
+Pharmacy inventory should not fail when the internet does. NexPharm acts as a high-reliability local-first platform designed to solve real-world billing, expiry tracking, and medicine scanning challenges. Operating with a robust offline-first architecture, it provides pharmacy staff with uninterrupted operations, microsecond-latency POS billing, and real-time backend synchronization.
 
-### Management Tools
-- 👤 **Customer Management** - Track customer purchase history and details
-- 🏭 **Supplier Management** - Maintain supplier database and relationships
-- 📈 **Medicine Groups** - Organize medicines by category and type
-- ⚠️ **Medicine Shortage Tracking** - Monitor medicines below reorder level
+---
 
-## 🛠️ Tech Stack
+## ✦ Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, React
-- **Backend**: Supabase (PostgreSQL)
-- **Real-time Sync**: PowerSync
-- **Database ORM**: Kysely
-- **UI Components**: shadcn/ui, Lucide Icons
-- **Forms**: Formik + Yup
-- **Charts**: Recharts
-- **Barcode Scanner**: undecaf/barcode-detector-polyfill
-- **Styling**: Tailwind CSS
+| Category | Technologies |
+| :------------------------- | :---------------------------------------------------------------------- |
+| **🌐 Frontend**            | Next.js, React, Tailwind CSS, shadcn/ui (Radix UI)                      |
+| **⚙️ Backend & Logic**     | Next.js Server Components, Structured Service Layer                     |
+| **☁️ Infrastructure**      | Supabase (PostgreSQL), Supabase Auth, Row Level Security (RLS)          |
+| **🔄 Sync & Local DB**     | PowerSync (Real-time Sync Engine), IndexedDB (Local DB)                 |
+| **⚡ Database ORM**         | Kysely (Type-safe SQL Query Builder)                                    |
+| **🤖 Intelligence & OCR**  | Tesseract.js (On-device OCR), Fuse.js (Fuzzy search), Barcode Detector API |
+| **📦 Forms & Validation**  | Formik, Yup                                                             |
+| **📊 Visualization**       | Recharts (Dynamic inventory & analytics dashboard)                      |
 
-## 📦 Installation
+---
 
-### Prerequisites
-- Node.js 18+ and npm/pnpm/yarn
-- Supabase account
-- PowerSync account
+<br />
 
-### Setup
+## ✦ Core Features
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/nexpharm.git
-cd nexpharm
+| Capability | Description |
+| :------------------------- | :---------------------------------------------------------------------- |
+| **🔄 Offline-First Sync**   | Fully operational CRUD via local IndexedDB, automatically syncing with Supabase using PowerSync. |
+| **📷 OCR Medicine Scanner** | Instant on-device medicine identification using Tesseract.js with image pre-processing. |
+| **🏷️ Barcode Detection**   | Ultra-fast barcode scanning for seamless medicine lookups at point-of-sale checkout. |
+| **📦 Batch & Expiry System**| Smart sorting of medicine batches based on First-Expiry-First-Out (FEFO) to minimize product loss. |
+| **🔔 Multi-Tier Alerts**   | Dynamic notifications (15/30/90 days expiry) and low-stock alerts to prevent shelf empty-outs. |
+| **🛒 Point of Sale (POS)**  | Sequential, GST-compliant invoice generation with atomic multi-batch inventory updates. |
+| **📊 Advanced Analytics**  | Real-time charts covering daily sales, total revenue, high-demand items, and valuation. |
+| **🔒 Multi-Tenant Security**| Multi-pharmacy tenant isolation using Supabase Row Level Security (RLS) policies. |
+
+---
+
+## ✦ Highlighted Feature: Offline-First Synchronization
+
+NexPharm is engineered around a local-first paradigm. Pharmacy checkout workflows function instantly without any network delays.
+
+
+![Offline Sync System](public/images/nexpharm-offline-sync.png)
+---
+
+- **Zero-Latency Interactions**: Immediate UI updates regardless of current network state.
+- **Bi-directional Sync**: Automatically uploads local mutations and fetches remote changes.
+- **Conflict Handling & Queuing**: Smart handling of offline transactional queues.
+
+
+
+## ✦ Project Structure
+
+```txt
+pharmacy-inventory/
+├── public/                # Static assets & PowerSync copy-assets
+│   └── images/            # NexPharm architecture, banner and features media
+├── src/
+│   ├── app/               # Next.js 15 App Router pages & SSR loaders
+│   ├── components/        # Reusable shadcn components & POS UI elements
+│   ├── hooks/             # Custom hooks managing medicine & POS states
+│   ├── lib/               # Initialization scripts for PowerSync & Supabase
+│   ├── services/          # Business logic layer executing type-safe queries
+│   ├── types/             # Strict type definitions for database tables
+│   ├── utils/             # Image processing helpers & Levenshtein matching
+│   └── middleware.ts      # Authentication & SSR routing guards
+├── package.json           # Scripts (dev, build, start, postinstall)
+└── tsconfig.json          # Strict TypeScript configuration
 ```
 
-2. **Install dependencies**
+---
+
+## ✦ Visual Tour
+
+### ✦ Feature Catalog
+![Features](public/images/nexpharm-features.png)
+---
+### ✦ High-Level System Design
+![System Architecture](public/images/nexpharm-system-architecture.png)
+
+---
+
+## ✦ Getting Started
+
+Follow these steps to set up and run NexPharm locally on your machine:
+
+### 1. Prerequisites
+- **Node.js**: v18.x or v20.x+
+- **Supabase Account**: An active PostgreSQL instance
+- **PowerSync Account**: To orchestrate real-time client synchronization
+
+### 2. Setup & Installation
+Clone the repository and install the dependencies:
 ```bash
+git clone https://github.com/sayandas24/pharmacy-inventory.git
+cd pharmacy-inventory
 npm install
-# or
-pnpm install
-# or
-yarn install
 ```
+*(Note: A `postinstall` script runs automatically to copy the PowerSync WASM assets into the `public` folder.)*
 
-3. **Environment Variables**
+<details>
+<summary><h3 style="display: inline;">3. Environment Configuration</h3></summary>
 
 Create a `.env.local` file in the root directory:
 
@@ -81,134 +118,29 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_POWERSYNC_URL=your_powersync_instance_url
 ```
 
-4. **Database Setup**
+</details>
 
-Run the SQL migrations in your Supabase project:
-- Create tables for medicines, pharmacy_medicines, medicine_batches, sales, customers, suppliers, etc.
-- Set up Row Level Security (RLS) policies
-- Configure PowerSync sync rules
 
-5. **Run Development Server**
+
+### 4. Database & Sync Rules
+1. Apply the database schemas in your Supabase SQL editor.
+2. Enable Row-Level Security (RLS) policies for data isolation.
+3. Configure your sync rules in the PowerSync Dashboard to target your local client tables.
+
+### 5. Launch the Development Server
 ```bash
 npm run dev
-# or
-pnpm dev
-# or
-yarn dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) to view the application.
-
-## 🗂️ Project Structure
-
-```
-nexpharm/
-├── app/                    # Next.js App Router pages
-│   ├── (auth)/            # Authentication pages
-│   ├── dashboard/         # Dashboard pages
-│   │   ├── medicines/     # Medicine management
-│   │   ├── pos/           # Point of Sale
-│   │   ├── inventory/     # Inventory management
-│   │   ├── customers/     # Customer management
-│   │   ├── suppliers/     # Supplier management
-│   │   ├── alerts/        # Alerts & notifications
-│   │   └── analytics/     # Analytics dashboard
-│   └── layout.tsx         # Root layout
-├── components/            # React components
-├── hooks/                 # Custom React hooks
-│   └── use-medicines.ts   # Medicine operations hook
-├── lib/                   # Utilities & configurations
-│   └── powersync/         # PowerSync setup
-├── types/                 # TypeScript type definitions
-└── public/                # Static assets
-```
-
-## 🚀 Deployment
-
-### Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/nexpharm)
-
-1. Push your code to GitHub
-2. Import project to Vercel
-3. Add environment variables
-4. Deploy
-
-### Environment Variables (Production)
-
-Make sure to add these in Vercel Dashboard → Settings → Environment Variables:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_POWERSYNC_URL`
-
-## 📊 Database Schema
-
-### Core Tables
-- `medicines` - Master medicine catalog
-- `pharmacy_medicines` - Pharmacy-specific medicine inventory
-- `medicine_batches` - Batch tracking with expiry dates
-- `sales` - Sales transactions
-- `sale_items` - Individual sale line items
-- `customers` - Customer database
-- `suppliers` - Supplier information
-- `expiry_alerts` - Automated expiry notifications
-
-### Multi-Pharmacy Architecture
-The system supports multiple pharmacies with data isolation using the `pharmacy_id` foreign key across all relevant tables.
-
-## 🎯 Key Features Implementation
-
-### 1. Real-Time Sync with PowerSync
-- Offline-first architecture
-- Automatic sync when online
-- Conflict resolution
-- Multi-device support
-
-### 2. Barcode Scanning
-- Browser-based barcode detection
-- Quick medicine lookup
-- Add to cart directly from scan
-
-### 3. Automated Alerts
-- Background jobs check expiry dates
-- Push notifications for low stock
-- Email alerts (optional)
-
-### 4. Analytics Dashboard
-- Visual sales trends
-- Top-performing medicines
-- Revenue insights
-- Inventory valuation
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Sayan Das**
-- GitHub: [@sayandas24](https://github.com/sayandas24)
-
-## 🙏 Acknowledgments
-
-- Built for hackathon demonstration
-- Inspired by real-world pharmacy management challenges
-- Powered by modern web technologies
-
-## 📞 Support
-
-For support, email your-email@example.com or open an issue in the GitHub repository.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
+ 
 
-Made with ❤️ for improving pharmacy operations
+<div align="center">
+   
+  <br />
+  <sub>Made with ❤️ by Sayan, powered by ☕ for next-generation pharmacy operations.</sub>
+  <br />
+  <p style="margin:1px 0; font-size:18px;">   
+  <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" alt="Animated line animation" width="500" />
+</div>
